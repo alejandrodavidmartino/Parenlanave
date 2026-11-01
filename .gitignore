@@ -8,3 +8,17 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Django
+.env
+db.sqlite3
+/staticfiles/
+# Compiled by django-tailwind-cli
+/assets/css/tailwind.css
+.django_tailwind_cli/
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/

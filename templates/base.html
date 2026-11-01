@@ -1,0 +1,16 @@
+{% load django_htmx tailwind_cli %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Paren la nave{% endblock %}</title>
+    {% tailwind_css %}
+    {% htmx_script %}
+  </head>
+  <body class="min-h-screen bg-slate-900 text-slate-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <main class="mx-auto max-w-md p-4">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
