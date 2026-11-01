@@ -6,6 +6,12 @@ Fuente de verdad del motor (`game/engine.py`). Cada regla tiene un identificador
 
 ## Glosario
 
+- **Partida**: el juego completo, formado por varias rondas. Al final gana quien tenga
+  más monedas.
+- **Ronda**: todo lo que ocurre con una misma pregunta: desde la apuesta inicial hasta
+  revelar la respuesta y repartir las monedas. El turno puede dar varias vueltas a la
+  mesa dentro de una misma ronda.
+- **Turno**: el momento en que un jugador hace una acción (quedarse, bajarse o subir).
 - **Nave**: el grupo de jugadores que siguen en juego durante la ronda.
 - **Apuesta**: un número que alguien dice como respuesta a la pregunta.
 - **Capitán**: el jugador que ha hecho la apuesta más alta hasta el momento.
