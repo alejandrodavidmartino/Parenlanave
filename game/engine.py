@@ -6,8 +6,14 @@ The rules it implements are described in RULES.md.
 """
 
 import random
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum
+
+# Game setup (R1-R3).
+MIN_PLAYERS = 3
+MAX_PLAYERS = 8
+DEFAULT_ROUNDS = 8
+STARTING_COINS = 0
 
 # Coins won (or lost, if negative) at the end of a round (R21-R24).
 CAPTAIN_SUCCESS = 4
@@ -201,3 +207,38 @@ def score_round(result: RoundResult) -> dict[int, int]:
 def apply_scores(coins: list[int], deltas: dict[int, int]) -> list[int]:
     """Add each player's coins for the round. Nobody goes below 0 (R25)."""
     return [max(0, total + deltas.get(player, 0)) for player, total in enumerate(coins)]
+
+
+def check_player_count(count: int) -> None:
+    """A game has between 3 and 8 players (R1)."""
+    if not MIN_PLAYERS <= count <= MAX_PLAYERS:
+        raise ValueError(f"A game needs {MIN_PLAYERS} to {MAX_PLAYERS} players, not {count}")
+
+
+def winners(coins: list[int]) -> list[int]:
+    """Positions of the players with the most coins. Ties share the win (R4)."""
+    best = max(coins)
+    return [player for player, total in enumerate(coins) if total == best]
+
+
+def round_to_dict(round_: Round) -> dict:
+    """Turn a round into plain data (text and numbers) so it can be saved as JSON."""
+    data = asdict(round_)
+    data["players"] = [
+        {"name": player.name, "status": player.status.value} for player in round_.players
+    ]
+    return data
+
+
+def round_from_dict(data: dict) -> Round:
+    """Rebuild a round saved with `round_to_dict`."""
+    players = [
+        Player(name=player["name"], status=PlayerStatus(player["status"]))
+        for player in data["players"]
+    ]
+    return Round(
+        players=players,
+        captain=data["captain"],
+        current_bid=data["current_bid"],
+        turn_index=data["turn_index"],
+    )
