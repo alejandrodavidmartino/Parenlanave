@@ -1,17 +1,51 @@
 [project]
 name = "parenlanave"
 version = "0.1.0"
-description = "Add your description here"
+description = "Turn-based numeric estimation party game built with Django"
 readme = "README.md"
 authors = [
     { name = "AlejandroMartino", email = "alejandrodavidmartino@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "django>=6.1,<6.2",
+    "django-environ>=0.14.0",
+    "django-htmx>=1.29.0",
+    "django-tailwind-cli>=4.8.2",
+]
 
-[project.scripts]
-parenlanave = "parenlanave:main"
+[dependency-groups]
+dev = [
+    "django-debug-toolbar>=8.0.0",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "pytest-django>=4.14.0",
+    "ruff>=0.17.3",
+]
 
-[build-system]
-requires = ["uv_build>=0.13.6,<0.14.0"]
-build-backend = "uv_build"
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["game"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import order)
+    "B",    # flake8-bugbear (likely bugs)
+    "UP",   # pyupgrade (modern syntax)
+    "DJ",   # flake8-django
+    "SIM",  # flake8-simplify
+]
