@@ -9,13 +9,17 @@ from game.engine import (
     PlayerStatus,
     RoundResult,
     apply_scores,
+    check_player_count,
     choose_opener,
     finish_round,
     leave,
     raise_bid,
+    round_from_dict,
+    round_to_dict,
     score_round,
     start_round,
     stay,
+    winners,
 )
 
 NAMES = ["Ana", "Luis", "Marta"]
@@ -334,3 +338,47 @@ def test_full_round_from_start_to_coins():
     coins = apply_scores([0, 0, 0], score_round(result))
 
     assert coins == [2, 4, 0]  # Ana crew, Luis captain, Marta deserter
+
+
+# Game setup and winner.
+
+
+@pytest.mark.parametrize("count", [3, 8])
+def test_r1_three_to_eight_players_are_allowed(count):
+    check_player_count(count)  # does not raise
+
+
+@pytest.mark.parametrize("count", [2, 9])
+def test_r1_fewer_than_three_or_more_than_eight_players_are_rejected(count):
+    with pytest.raises(ValueError):
+        check_player_count(count)
+
+
+def test_r4_player_with_most_coins_wins():
+    assert winners([5, 12, 7]) == [LUIS]
+
+
+def test_r4_tied_players_all_win():
+    assert winners([12, 5, 12]) == [ANA, MARTA]
+
+
+# Saving a round.
+
+
+def test_round_survives_being_turned_into_a_dict_and_back():
+    round_ = start_round(NAMES, opener=ANA, opening_bid=100)
+    leave(round_, LUIS)
+    raise_bid(round_, MARTA, 150)
+
+    data = round_to_dict(round_)
+
+    assert round_from_dict(data) == round_
+
+
+def test_round_dict_only_has_plain_values():
+    round_ = start_round(NAMES, opener=ANA, opening_bid=100)
+    leave(round_, LUIS)
+
+    data = round_to_dict(round_)
+
+    assert data["players"][LUIS] == {"name": "Luis", "status": "left"}
