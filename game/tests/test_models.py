@@ -1,7 +1,10 @@
+import random
+
 import pytest
 from django.core.exceptions import ValidationError
 
-from game.models import Question
+from game import engine
+from game.models import Game, Question
 
 
 @pytest.mark.django_db
@@ -31,3 +34,119 @@ def test_r9_question_answer_cannot_be_negative():
 
     with pytest.raises(ValidationError):
         question.full_clean()
+
+
+@pytest.mark.django_db
+def test_r1_game_starts_with_its_players_in_turn_order():
+    game = Game.start(["Ana", "Luis", "Marta"])
+
+    assert [player.name for player in game.players.all()] == ["Ana", "Luis", "Marta"]
+    assert [player.position for player in game.players.all()] == [0, 1, 2]
+
+
+@pytest.mark.django_db
+def test_r1_game_with_too_few_players_is_not_created():
+    with pytest.raises(ValueError):
+        Game.start(["Ana", "Luis"])
+
+    assert not Game.objects.exists()
+
+
+@pytest.mark.django_db
+def test_r2_game_has_8_rounds_by_default():
+    game = Game.start(["Ana", "Luis", "Marta"])
+
+    assert game.total_rounds == 8
+
+
+@pytest.mark.django_db
+def test_r2_number_of_rounds_can_be_chosen():
+    game = Game.start(["Ana", "Luis", "Marta"], total_rounds=5)
+
+    assert game.total_rounds == 5
+
+
+@pytest.mark.django_db
+def test_r3_players_start_with_0_coins():
+    game = Game.start(["Ana", "Luis", "Marta"])
+
+    assert all(player.coins == 0 for player in game.players.all())
+
+
+@pytest.mark.django_db
+def test_game_and_player_show_a_readable_name():
+    game = Game.start(["Ana", "Luis", "Marta"])
+
+    assert str(game).startswith(f"Game {game.pk} (")
+    assert str(game.players.first()) == "Ana"
+
+
+# Rounds.
+
+NAMES = ["Ana", "Luis", "Marta"]
+
+
+@pytest.fixture
+def three_questions():
+    return [Question.objects.create(text=f"Question {n}", answer=n * 100) for n in range(1, 4)]
+
+
+@pytest.mark.django_db
+def test_next_round_picks_a_question_and_an_opener(three_questions):
+    game = Game.start(NAMES)
+
+    game.next_round(random.Random(1))
+
+    assert game.current_round == 1
+    assert game.current_question in three_questions
+    assert game.opener in {0, 1, 2}
+    assert game.round_state is None  # waiting for the opening bid
+
+
+@pytest.mark.django_db
+def test_r6_questions_are_not_repeated_in_a_game(three_questions):
+    game = Game.start(NAMES, total_rounds=3)
+    rng = random.Random(1)
+
+    asked = []
+    for _ in range(3):
+        game.next_round(rng)
+        asked.append(game.current_question)
+
+    assert sorted(question.pk for question in asked) == sorted(q.pk for q in three_questions)
+
+
+@pytest.mark.django_db
+def test_next_round_fails_when_there_are_no_questions_left(three_questions):
+    game = Game.start(NAMES, total_rounds=5)
+    rng = random.Random(1)
+    for _ in range(3):
+        game.next_round(rng)
+
+    with pytest.raises(ValueError):
+        game.next_round(rng)
+
+
+@pytest.mark.django_db
+def test_r2_no_more_rounds_after_the_last_one(three_questions):
+    game = Game.start(NAMES, total_rounds=1)
+    game.next_round(random.Random(1))
+
+    with pytest.raises(ValueError):
+        game.next_round(random.Random(1))
+
+
+@pytest.mark.django_db
+def test_round_in_progress_is_saved_and_loaded_from_the_database(three_questions):
+    game = Game.start(NAMES)
+    game.next_round(random.Random(1))
+    game.open_round(100)
+    round_ = game.load_round()
+    engine.stay(round_, round_.turn_index)
+    game.save_round(round_)
+
+    reloaded = Game.objects.get(pk=game.pk).load_round()
+
+    assert reloaded == round_
+    assert reloaded.captain == game.opener
+    assert reloaded.current_bid == 100
