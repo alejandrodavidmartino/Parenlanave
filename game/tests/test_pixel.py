@@ -131,3 +131,11 @@ def test_a_normal_round_has_no_chest_and_no_cheering():
     svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
 
     assert "animate-twinkle" not in svg and "animate-cheer" not in svg
+
+
+def test_ship_rocks_while_waiting_for_the_answer():
+    result = RoundResult(captain=0, crew=[1], deserters=[2], bid=10, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert '<g class="animate-rock"><g class="animate-sail-away sail-away">' in svg
