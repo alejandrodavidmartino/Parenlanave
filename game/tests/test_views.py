@@ -571,3 +571,22 @@ def test_revealed_round_lists_who_is_aboard_and_who_stayed_on_the_dock(client, g
     assert len(aboard) == 2 and len(ashore) == 1
     assert "A bordo:" in response.content.decode()
     assert "En el muelle:" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_tells_the_opener_to_bid(client, game):
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "Te toca abrir: di el primer número." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_shows_the_captain_and_bid_to_beat(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    captain = refresh(game).players.all()[refresh(game).load_round().captain].name
+    content = response.content.decode()
+    assert f"Capitán: {captain} con" in content
+    assert "nadie más mire" not in content
