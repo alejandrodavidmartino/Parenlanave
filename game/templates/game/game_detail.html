@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Partida {{ game.pk }} · Atraquen el barco{% endblock %}
+
+{% block content %}
+  <h1 class="text-2xl font-bold">Partida {{ game.pk }}</h1>
+  <p class="mt-1 text-slate-300">Ronda {{ game.current_round }} de {{ game.total_rounds }}</p>
+
+  <ul class="mt-6 divide-y divide-slate-700 rounded-lg bg-slate-800">
+    {% for player in game.players.all %}
+      <li class="flex justify-between px-4 py-3">
+        <span>{{ player.name }}</span>
+        <span class="text-slate-300">{{ player.coins }} monedas</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
