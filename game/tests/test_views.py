@@ -590,3 +590,96 @@ def test_pass_the_phone_shows_the_captain_and_bid_to_beat(client, game):
     content = response.content.decode()
     assert f"Capitán: {captain} con" in content
     assert "nadie más mire" not in content
+
+
+# End of the game ceremony.
+
+
+@pytest.mark.django_db
+def test_last_reveal_brings_the_podium_ceremony(client, game):
+    game.total_rounds = 1
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    assert "data-ceremony hidden" in content
+    assert "¡Fin de la<br>partida!" in content
+    assert "animation-delay: 1.5s" in content  # 3rd place first, with a dot not a comma
+    assert "animation-delay: 3.8s" in content  # the winner last
+
+
+@pytest.mark.django_db
+def test_a_reveal_that_is_not_the_last_has_no_ceremony(client, game):
+    game.total_rounds = 2
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    assert "data-ceremony" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_ceremony_lists_everyone_after_the_podium(client):
+    Question.objects.create(text="How many keys does a piano have?", answer=88)
+    game = Game.start(["Ana", "Luis", "Marta", "Pablo", "Eva"], total_rounds=1)
+    game.players.filter(name="Pablo").update(coins=1)
+    finish_round_with(client, game, players=5)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    others = response.context["others"]
+    assert [player["place"] for player in others] == [4, 5]
+    assert [player["appears_at"] for player in others] == [5.0, 5.3]
+    assert response.context["buttons_appear_at"] == 5.9
+
+
+def finish_round_with(client, game, players):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    for _ in range(players - 1):
+        play(client, game, "stay")
+
+
+@pytest.mark.django_db
+def test_each_podium_step_shows_the_players_sailor(client, game):
+    game.total_rounds = 1
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    for step in response.context["podium"]:
+        assert f'aria-label="{step["name"]}"' in content  # the sailor, labelled with the name
+        assert f'fill="{step["background"]}"' in content  # painted in the player's colour
+
+
+@pytest.mark.django_db
+def test_ceremony_scoreboard_opens_the_final_standings(client, game):
+    game.total_rounds = 1
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    standings = content[content.index('id="final-standings"') :]
+    assert "document.getElementById('final-standings').showModal()" in content
+    assert "Clasificación final" in standings
+    for player in response.context["ranking"]:
+        assert player["name"] in standings
+        assert f'fill="{player["background"]}"' in standings  # their sailor, in colour
+    assert reverse("game:title") in standings  # back to the main menu
+
+
+@pytest.mark.django_db
+def test_trophy_scoreboard_shows_each_players_sailor(client, game):
+    response = client.get(url("detail", game))
+
+    content = response.content.decode()
+    scoreboard = content[content.index('id="scoreboard"') :]
+    for player in game.players.all():
+        assert f'fill="{player.background}"' in scoreboard
