@@ -10,4 +10,5 @@ urlpatterns = [
     path("games/<int:pk>/next-round/", views.next_round, name="next_round"),
     path("games/<int:pk>/open/", views.open_round, name="open_round"),
     path("games/<int:pk>/play/", views.play, name="play"),
+    path("games/<int:pk>/reveal/", views.reveal, name="reveal"),
 ]

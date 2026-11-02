@@ -27,7 +27,7 @@ def game_detail(request, pk):
 @require_POST
 def next_round(request, pk):
     game = get_object_or_404(Game, pk=pk)
-    if game.phase not in ("not_started", "round_over"):
+    if game.phase not in ("not_started", "revealed"):
         return _respond(request, game, error=INVALID_MOVE)
     try:
         game.next_round(random.Random())
@@ -72,6 +72,16 @@ def play(request, pk):
     return _respond(request, game)
 
 
+@require_POST
+def reveal(request, pk):
+    """Show the real answer and give out the coins (R20-R25)."""
+    game = get_object_or_404(Game, pk=pk)
+    if game.phase != "round_over":
+        return _respond(request, game, error=INVALID_MOVE)
+    game.reveal()
+    return _respond(request, game)
+
+
 def _read_bid(request) -> int:
     try:
         return int(request.POST.get("bid", ""))
@@ -101,6 +111,10 @@ def _board_context(game, error=None):
         context["captain_name"] = players[round_.captain].name
         context["turn_name"] = players[round_.turn_index].name
         context["next_bid"] = round_.current_bid + 1
+    if game.round_scores is not None:
+        context["result"] = game.result()
+    if context["phase"] == "game_over":
+        context["winners"] = [player.name for player in game.winners()]
 
     context["players"] = [
         {
@@ -109,6 +123,9 @@ def _board_context(game, error=None):
             "captain": round_ is not None and round_.captain == player.position,
             "left": round_ is not None
             and round_.players[player.position].status == engine.PlayerStatus.LEFT,
+            "score": (
+                game.round_scores[player.position] if game.round_scores is not None else None
+            ),
         }
         for player in players
     ]

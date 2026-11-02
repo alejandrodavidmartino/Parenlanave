@@ -15,12 +15,47 @@
     </div>
   {% endif %}
 
-  {% if phase == "not_started" or phase == "round_over" %}
-    {% if phase == "round_over" %}
-      <p class="text-center">
-        Ronda terminada. Capitán: <strong>{{ captain_name }}</strong> con <strong>{{ round.current_bid }}</strong>.
+  {% if phase == "round_over" %}
+    <p class="text-center">
+      Ronda terminada. Capitán: <strong>{{ captain_name }}</strong> con <strong>{{ round.current_bid }}</strong>.
+    </p>
+    <form hx-post="{% url 'game:reveal' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:reveal' game.pk %}">
+      {% csrf_token %}
+      <button class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
+        Revelar la respuesta
+      </button>
+    </form>
+  {% endif %}
+
+  {% if result %}
+    <div class="rounded-lg p-4 text-center {% if result.success %}bg-emerald-900/60{% else %}bg-rose-900/60{% endif %}">
+      <p class="text-slate-300">La respuesta era</p>
+      <p class="text-4xl font-bold">{{ result.answer }}</p>
+      <p class="mt-2 text-lg font-semibold">
+        {% if result.success %}¡Barco atracado!{% else %}¡Naufragio!{% endif %}
+        {% if result.lone_captain %}(capitán solitario){% endif %}
       </p>
-    {% endif %}
+      <p class="text-sm text-slate-300">
+        {{ captain_name }} apostó {{ result.bid }}{% if result.success %}, sin pasarse{% else %} y se pasó{% endif %}.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if phase == "game_over" %}
+    <div class="rounded-lg bg-amber-500/20 p-4 text-center">
+      <p class="text-slate-300">Fin de la partida</p>
+      <p class="text-2xl font-bold">
+        {% if winners|length == 1 %}Gana {{ winners.0 }}{% else %}Empate: {{ winners|join:", " }}{% endif %} 🏆
+      </p>
+    </div>
+    <a href="{% url 'game:home' %}"
+       class="block w-full rounded-lg bg-indigo-500 py-3 text-center font-semibold hover:bg-indigo-400">
+      Nueva partida
+    </a>
+  {% endif %}
+
+  {% if phase == "not_started" or phase == "revealed" %}
     <form hx-post="{% url 'game:next_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
           method="post" action="{% url 'game:next_round' game.pk %}">
       {% csrf_token %}
@@ -68,7 +103,15 @@
     {% for player in players %}
       <li class="flex justify-between px-4 py-3 {% if player.left %}text-slate-500 line-through{% endif %}">
         <span>{% if player.captain %}⚓ {% endif %}{{ player.name }}</span>
-        <span class="text-slate-300">{{ player.coins }} monedas</span>
+        <span class="text-slate-300">
+          {% if player.score is not None %}
+            <span class="{% if player.score > 0 %}text-emerald-400{% elif player.score < 0 %}text-rose-400{% endif %}">
+              {% if player.score > 0 %}+{% endif %}{{ player.score }}
+            </span>
+            ·
+          {% endif %}
+          {{ player.coins }} monedas
+        </span>
       </li>
     {% endfor %}
   </ul>
