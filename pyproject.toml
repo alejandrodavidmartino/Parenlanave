@@ -1,5 +1,5 @@
 [project]
-name = "parenlanave"
+name = "atraquen-el-barco"
 version = "0.1.0"
 description = "Turn-based numeric estimation party game built with Django"
 readme = "README.md"
