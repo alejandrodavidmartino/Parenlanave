@@ -20,12 +20,20 @@ def test_rules_screen_shows_the_engine_scoring(client):
     assert "<td>⚓ Capitán</td><td>4</td><td>-1</td>" in content
 
 
-def test_options_screen_has_the_animations_switch(client):
+def test_options_screen_has_animation_music_and_sound_switches(client):
     response = client.get(reverse("game:options"))
 
     content = response.content.decode()
-    assert "Animaciones" in content
-    assert 'onclick="toggleAnimations()"' in content
+    for option in ("animations", "music", "sfx"):
+        assert f"onclick=\"toggleOption('{option}')\"" in content
+    assert "Música" in content and "Efectos de sonido" in content
+
+
+def test_title_screen_plays_the_shanty_and_every_page_loads_the_sounds(client):
+    content = client.get(reverse("game:title")).content.decode()
+
+    assert 'data-music="title"' in content
+    assert "js/sound.js" in content
 
 
 def test_rules_screen_explains_every_step_of_a_round(client):
