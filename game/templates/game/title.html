@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load pixel %}
+
+{% block content %}
+  <h1 class="text-center font-pixel text-xl leading-relaxed text-px-gold">Atraquen<br>el barco</h1>
+
+  <div class="box-px mt-4 p-0">{% title_scene %}</div>
+
+  <nav class="mt-6 space-y-3" aria-label="Menú">
+    <a href="{% url 'game:new' %}" class="btn-px bg-px-gold text-px-black">Empezar juego ▶</a>
+    <a href="{% url 'game:options' %}" class="btn-px bg-px-sea text-px-black">Opciones</a>
+    <a href="{% url 'game:rules' %}" class="btn-px bg-px-lilac text-px-cream">Reglas</a>
+  </nav>
+{% endblock %}

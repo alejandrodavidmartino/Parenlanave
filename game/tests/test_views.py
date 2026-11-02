@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from game.models import Game, Question
 
-HOME = reverse("game:home")
+HOME = reverse("game:new")
 
 
 def new_game_data(*names, total_rounds=8):

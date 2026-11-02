@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Opciones · Atraquen el barco{% endblock %}
+
+{% block content %}
+  <h1 class="text-center font-pixel text-sm uppercase text-px-gold">Opciones</h1>
+
+  <div class="box-px mt-6 flex items-center justify-between gap-4 bg-px-black">
+    <div>
+      <p class="text-2xl">Animaciones</p>
+      <p class="text-lg text-px-silver">Tragaperras, parpadeos, monedas y el barco meciéndose.</p>
+    </div>
+    {# The label follows the no-anim class on <html>, so it is always right with no extra JS. #}
+    <button type="button" onclick="toggleAnimations()" aria-label="Animaciones sí o no"
+            class="tag-px notch shrink-0 bg-px-green px-3 py-2 text-xs text-px-black in-[.no-anim]:bg-px-red in-[.no-anim]:text-px-cream">
+      <span class="in-[.no-anim]:hidden">Sí</span><span class="hidden in-[.no-anim]:inline">No</span>
+    </button>
+  </div>
+  <p class="mt-2 text-lg text-px-silver">Se guarda en este móvil.</p>
+
+  <a href="{% url 'game:title' %}" class="btn-px mt-6 bg-px-lilac text-px-cream">◀ Volver</a>
+{% endblock %}
