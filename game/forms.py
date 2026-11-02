@@ -2,7 +2,7 @@ from django import forms
 
 from . import engine
 
-INPUT_CLASSES = "w-full rounded-lg bg-slate-800 px-3 py-2 text-slate-100 placeholder-slate-500"
+INPUT_CLASSES = "input-px"
 
 
 class NewGameForm(forms.Form):
