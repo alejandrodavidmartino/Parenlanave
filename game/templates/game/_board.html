@@ -1,0 +1,118 @@
+{# The part of the game page that changes. HTMX swaps it after every move. #}
+<div id="board" class="space-y-6">
+  <p class="text-slate-300">Ronda {{ game.current_round }} de {{ game.total_rounds }}</p>
+
+  {% if error %}
+    <p class="rounded-lg bg-red-900/60 p-3 text-red-100">{{ error }}</p>
+  {% endif %}
+
+  {% if phase != "not_started" %}
+    <div class="rounded-lg bg-slate-800 p-4">
+      {% if game.current_question.category %}
+        <p class="text-sm uppercase tracking-wide text-indigo-300">{{ game.current_question.category }}</p>
+      {% endif %}
+      <p class="mt-1 text-lg font-semibold">{{ game.current_question.text }}</p>
+    </div>
+  {% endif %}
+
+  {% if phase == "round_over" %}
+    <p class="text-center">
+      Ronda terminada. Capitán: <strong>{{ captain_name }}</strong> con <strong>{{ round.current_bid }}</strong>.
+    </p>
+    <form hx-post="{% url 'game:reveal' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:reveal' game.pk %}">
+      {% csrf_token %}
+      <button class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
+        Revelar la respuesta
+      </button>
+    </form>
+  {% endif %}
+
+  {% if result %}
+    <div class="rounded-lg p-4 text-center {% if result.success %}bg-emerald-900/60{% else %}bg-rose-900/60{% endif %}">
+      <p class="text-slate-300">La respuesta era</p>
+      <p class="text-4xl font-bold">{{ result.answer }}</p>
+      <p class="mt-2 text-lg font-semibold">
+        {% if result.success %}¡Barco atracado!{% else %}¡Naufragio!{% endif %}
+        {% if result.lone_captain %}(capitán solitario){% endif %}
+      </p>
+      <p class="text-sm text-slate-300">
+        {{ captain_name }} apostó {{ result.bid }}{% if result.success %}, sin pasarse{% else %} y se pasó{% endif %}.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if phase == "game_over" %}
+    <div class="rounded-lg bg-amber-500/20 p-4 text-center">
+      <p class="text-slate-300">Fin de la partida</p>
+      <p class="text-2xl font-bold">
+        {% if winners|length == 1 %}Gana {{ winners.0 }}{% else %}Empate: {{ winners|join:", " }}{% endif %} 🏆
+      </p>
+    </div>
+    <a href="{% url 'game:home' %}"
+       class="block w-full rounded-lg bg-indigo-500 py-3 text-center font-semibold hover:bg-indigo-400">
+      Nueva partida
+    </a>
+  {% endif %}
+
+  {% if phase == "not_started" or phase == "revealed" %}
+    <form hx-post="{% url 'game:next_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:next_round' game.pk %}">
+      {% csrf_token %}
+      <button class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
+        {% if phase == "not_started" %}Empezar la partida{% else %}Siguiente ronda{% endif %}
+      </button>
+    </form>
+
+  {% elif phase == "opening" %}
+    <p class="text-center text-xl">Abre la ronda: <strong>{{ opener_name }}</strong></p>
+    <form hx-post="{% url 'game:open_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:open_round' game.pk %}" class="flex gap-2">
+      {% csrf_token %}
+      <input type="number" name="bid" min="0" required inputmode="numeric" placeholder="Tu número"
+             class="w-full rounded-lg bg-slate-800 px-3 py-2">
+      <button class="rounded-lg bg-indigo-500 px-4 font-semibold hover:bg-indigo-400">Apostar</button>
+    </form>
+
+  {% elif phase == "playing" %}
+    <p class="text-center">
+      Capitán: <strong>{{ captain_name }}</strong> con <strong class="text-2xl">{{ round.current_bid }}</strong>
+    </p>
+    <p class="text-center text-xl">Le toca a <strong>{{ turn_name }}</strong></p>
+
+    <form hx-post="{% url 'game:play' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:play' game.pk %}" class="space-y-2">
+      {% csrf_token %}
+      <input type="hidden" name="player" value="{{ round.turn_index }}">
+      <div class="grid grid-cols-2 gap-2">
+        <button name="action" value="stay" formnovalidate
+                class="rounded-lg bg-emerald-600 py-3 font-semibold hover:bg-emerald-500">Me quedo</button>
+        <button name="action" value="leave" formnovalidate
+                class="rounded-lg bg-rose-600 py-3 font-semibold hover:bg-rose-500">Me bajo</button>
+      </div>
+      <div class="flex gap-2">
+        <input type="number" name="bid" min="{{ next_bid }}" inputmode="numeric" placeholder="{{ next_bid }} o más"
+               class="w-full rounded-lg bg-slate-800 px-3 py-2">
+        <button name="action" value="raise"
+                class="rounded-lg bg-amber-500 px-4 font-semibold text-slate-900 hover:bg-amber-400">Subo</button>
+      </div>
+    </form>
+  {% endif %}
+
+  <ul class="divide-y divide-slate-700 rounded-lg bg-slate-800">
+    {% for player in players %}
+      <li class="flex justify-between px-4 py-3 {% if player.left %}text-slate-500 line-through{% endif %}">
+        <span>{% if player.captain %}⚓ {% endif %}{{ player.name }}</span>
+        <span class="text-slate-300">
+          {% if player.score is not None %}
+            <span class="{% if player.score > 0 %}text-emerald-400{% elif player.score < 0 %}text-rose-400{% endif %}">
+              {% if player.score > 0 %}+{% endif %}{{ player.score }}
+            </span>
+            ·
+          {% endif %}
+          {{ player.coins }} monedas
+        </span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
