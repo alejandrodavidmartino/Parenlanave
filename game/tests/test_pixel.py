@@ -59,3 +59,9 @@ def test_title_scene_draws_everything_inside_the_canvas():
     ):
         assert int(x) + int(width) <= 120
         assert int(y) + int(height) <= 90
+
+
+def test_sprite_colour_paints_the_c_pixels():
+    svg = sprite("sailor", colour="#00e436")
+
+    assert 'fill="#00e436"' in svg
