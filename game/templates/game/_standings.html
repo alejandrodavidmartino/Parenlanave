@@ -1,0 +1,13 @@
+{% load pixel %}
+{# The scoreboard: one row per player, best first, with their little sailor in their #}
+{# colour. Used in the trophy window during the game and at the end of the ceremony. #}
+<ol class="space-y-2">
+  {% for player in ranking %}
+    <li class="box-px flex items-center gap-3 py-1 {% if forloop.first %}bg-px-gold text-px-black{% else %}bg-px-black{% endif %}">
+      <span class="w-6 font-pixel text-xs">{{ forloop.counter }}</span>
+      <span class="shrink-0 border-2 p-0.5" style="border-color: {{ player.background }}">{% sprite "sailor" 2 "" player.background %}</span>
+      <span class="min-w-0 flex-1 truncate text-2xl">{{ player.name }}</span>
+      <span class="shrink-0 font-pixel text-xs">{{ player.coins }} {% sprite "coin" 2 %}</span>
+    </li>
+  {% endfor %}
+</ol>

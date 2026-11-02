@@ -111,9 +111,11 @@ function playReveal(root) {
   if (!animationsOn()) {
     overlay.remove(); // the board underneath already shows the result
     playEnding(success, 0);
+    startCeremony();
     return;
   }
   overlay.hidden = false;
+  lockPage(true);
   Sound.suspense((800 + SUSPENSE_MS) / 1000);
   const counter = overlay.querySelector("[data-count]");
   const steps = countingSteps(answer);
@@ -168,14 +170,58 @@ function playEnding(success, delay) {
 }
 
 // Back to the board: replay the coins jumping, which happened hidden behind the scene.
+// While a full screen scene is on top, the page behind can't scroll and is hidden, so
+// nothing of the board peeks out at the edges.
+function lockPage(locked) {
+  document.documentElement.classList.toggle("overflow-hidden", locked);
+  document.documentElement.classList.toggle("overlay-open", locked);
+}
+
 function closeReveal(overlay) {
   overlay.remove();
+  lockPage(false);
   document.querySelectorAll("#board .animate-hop").forEach((element) => {
     element.getAnimations().forEach((animation) => {
       animation.cancel();
       animation.play();
     });
   });
+  startCeremony();
+}
+
+// End of the game: after the last reveal, the podium ceremony. The page says when each
+// part appears (CSS delays); here we only add the sounds and the confetti in time.
+const CONFETTI_COLOURS = ["#ff004d", "#29adff", "#ffec27", "#00e436", "#ffa300", "#ff77a8"];
+
+function startCeremony() {
+  const ceremony = document.querySelector("[data-ceremony]");
+  if (!ceremony) {
+    return;
+  }
+  ceremony.hidden = false;
+  lockPage(true);
+  Sound.drumroll(1.5);
+  setTimeout(() => Sound.ding(67), 1500); // 3rd place
+  setTimeout(() => Sound.ding(72), 2600); // 2nd place
+  setTimeout(() => {
+    Sound.victory(); // the winner
+    if (animationsOn()) {
+      throwConfetti(ceremony.querySelector("[data-confetti]"));
+    }
+  }, 3800);
+}
+
+function throwConfetti(container) {
+  for (let i = 0; i < 40; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "animate-fall absolute top-0 size-2";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = CONFETTI_COLOURS[i % CONFETTI_COLOURS.length];
+    piece.style.animationDelay = `${Math.random() * 1.5}s`;
+    piece.style.animationDuration = `${2.5 + Math.random() * 2}s`;
+    piece.addEventListener("animationend", () => piece.remove()); // gone once it lands
+    container.append(piece);
+  }
 }
 
 htmx.onLoad(playReveal);

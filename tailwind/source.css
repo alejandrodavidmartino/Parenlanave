@@ -37,6 +37,9 @@
   --animate-rock: px-rock 1.2s steps(2) infinite;
   /* Reveal scene at night: the waves drift sideways, back and forth. */
   --animate-waves: px-waves 1.6s steps(2) infinite;
+  /* End ceremony: things pop into view in turn, and confetti falls. */
+  --animate-appear: px-appear 0.4s steps(4) both;
+  --animate-fall: px-fall 3s linear both;
 
   @keyframes px-blink {
     50% { opacity: 0; }
@@ -66,6 +69,14 @@
     10% { transform: translate(1px, 0); }
     100% { transform: translate(0, 20px) rotate(12deg); }
   }
+  @keyframes px-appear {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes px-fall {
+    from { transform: translateY(-10vh) rotate(0deg); }
+    to { transform: translateY(110vh) rotate(360deg); }
+  }
   @keyframes px-waves {
     50% { transform: translateX(2px); }
   }
@@ -87,6 +98,12 @@
    until the counter decides. JavaScript then removes the voyage-wait class. */
 .voyage-wait :is(.animate-sail-away, .animate-sink, .animate-boom, .animate-cheer, .animate-twinkle) {
   animation-play-state: paused;
+}
+
+/* While a full screen scene (reveal or end ceremony) is on top, hide the board behind
+   it, so nothing peeks out at the edges of the screen. */
+.overlay-open #board > :not([data-reveal], [data-ceremony]) {
+  visibility: hidden;
 }
 
 /* SVG groups turn around their own centre, not the corner of the picture. */
