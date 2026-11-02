@@ -247,3 +247,87 @@ def test_without_htmx_errors_show_the_whole_page(client, game):
     assert response.status_code == 200
     assert "<html" in content
     assert "Esa jugada no está permitida." in content
+
+
+# Revealing and the end of the game.
+
+
+def finish_round(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    play(client, game, "stay")
+    play(client, game, "stay")
+
+
+@pytest.mark.django_db
+def test_reveal_shows_the_answer_and_the_coins(client, game):
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    assert "La respuesta era" in content and "88" in content
+    assert "¡Barco atracado!" in content  # 50 <= 88
+    assert "+4" in content and "+2" in content
+
+
+@pytest.mark.django_db
+def test_reveal_is_rejected_before_the_round_is_over(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_coins_are_given_only_once(client, game):
+    finish_round(client, game)
+    client.post(url("reveal", game), **HTMX)
+
+    client.post(url("reveal", game), **HTMX)
+
+    assert sorted(player.coins for player in game.players.all()) == [2, 2, 4]
+
+
+@pytest.mark.django_db
+def test_next_round_needs_the_answer_revealed_first(client, game):
+    game.total_rounds = 2
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_r4_last_round_shows_the_winner(client, game):
+    game.total_rounds = 1
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    captain = refresh(game).load_round().captain
+    winner = game.players.all()[captain].name
+    content = response.content.decode()
+    assert "Fin de la partida" in content
+    assert f"Gana {winner}" in content
+    assert "Nueva partida" in content
+
+
+@pytest.mark.django_db
+def test_r4_a_tie_shows_every_winner(client, game):
+    game.total_rounds = 1
+    game.save()
+    game.players.update(coins=10)  # the round below adds 4, 2 and 2
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "500"}, **HTMX)  # fails: 500 > 88
+    play(client, game, "leave")
+    play(client, game, "leave")  # lone captain fails: -1, deserters +2 each
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    assert "Empate:" in response.content.decode()
+    assert "¡Naufragio!" in response.content.decode()
