@@ -15,7 +15,7 @@ motor de Python puro y cubierta al 100 % por tests.
 3. Por turnos, el resto decide: **quedarse** en el barco, **bajarse** o **subir la
    apuesta** (y convertirse en el nuevo capitán).
 4. Cuando el turno vuelve al capitán sin que nadie suba, se revela la respuesta: si la
-   apuesta del capitán **no se pasa**, el barco atraca y la tripulación gana monedas; si
+   apuesta del capitán **no se pasa**, el barco zarpa y la tripulación gana monedas; si
    se pasa, naufraga y ganan los que se bajaron.
 5. Tras varias rondas, gana quien tenga más monedas.
 

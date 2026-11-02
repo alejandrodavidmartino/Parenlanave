@@ -75,17 +75,6 @@ SPRITES = {
         ".SSSSSSS.",
         "..SSSSS..",
     ],
-    "skull": [
-        "..KKKKK..",
-        ".KWWWWWK.",
-        "KWWWWWWWK",
-        "KWKKWKKWK",
-        "KWKKWKKWK",
-        "KWWWKWWWK",
-        ".KWWWWWK.",
-        "..KWKWK..",
-        "..KKKKK..",
-    ],
     "ship": [
         "......K.........",
         "......KW........",
@@ -143,6 +132,48 @@ SPRITES = {
         "..DDDDDDDD..",
         "..DDD..DDD..",
         "..KKK..KKK..",
+    ],
+    # Small figures for the reveal scene. "C" is the player's colour.
+    "mini_sailor": [
+        ".WWW.",
+        ".CCC.",
+        ".SSS.",
+        "CCCCC",
+        "SWWWS",
+        ".CCC.",
+        ".D.D.",
+        ".K.K.",
+    ],
+    "mini_captain": [
+        "KKKKK",
+        ".KYK.",
+        ".SSS.",
+        "CCCCC",
+        "SWWWS",
+        ".CCC.",
+        ".D.D.",
+        ".K.K.",
+    ],
+    # The lone captain's loot.
+    "chest": [
+        ".KKKKKK.",
+        "KRYRRYRK",
+        "KKKYYKKK",
+        "KRRYYRRK",
+        "KRYRRYRK",
+        "KKKKKKKK",
+    ],
+    "boom": [
+        "...Y...Y..",
+        ".Y..O.O..Y",
+        "...OOPOO..",
+        "Y.OPPYPPO.",
+        "..OPYWYPO.",
+        ".OPYWWYPOY",
+        "..OPYYPO..",
+        "Y..OPPO..Y",
+        "...O..O...",
+        ".Y...Y....",
     ],
     # Sits on the pirate's shoulder, looking away from him.
     "parrot": [
@@ -283,3 +314,109 @@ def title_scene():
         f'aria-label="Un pirata en un muelle de madera mira un barco al atardecer">'
         f"{''.join(parts)}</svg>"
     )
+
+
+@register.simple_tag
+def voyage_scene(result, players):
+    """The reveal animation, 120 x 60 pixels.
+
+    The captain and crew stand on the ship, the deserters on the dock. If the mission
+    succeeds the ship sails away and leaves the deserters behind; if it fails it blows
+    up and sinks. `result` is the engine's RoundResult and `players` the board's player
+    list (in turn order, each with its "background" colour).
+    """
+    c = SCENE_COLOURS
+    width, height, waterline = 120, 60, 42
+    parts = []
+
+    # Sunset sky and sea, like the title screen but shorter.
+    bands = [(0, "night"), (8, "plum"), (16, "red"), (25, "orange"), (34, "gold")]
+    for (top, colour), (bottom, _) in zip(bands, [*bands[1:], (waterline, None)], strict=True):
+        parts.append(_rect(0, top, width, bottom - top, c[colour]))
+    for (_, above), (border, below) in zip(bands, bands[1:], strict=False):
+        parts.extend(_rect(x, border - 1, 1, 1, c[below]) for x in range(0, width, 2))
+        parts.extend(_rect(x, border, 1, 1, c[above]) for x in range(1, width, 2))
+    parts.append(_rect(0, waterline, width, height - waterline, c["night"]))
+
+    # The dock on the left, with the deserters standing on it.
+    dock_end = 44
+    parts.append(_rect(0, waterline - 2, dock_end, 3, c["wood"]))
+    parts.append(_rect(0, waterline + 1, dock_end, 1, c["black"]))
+    for x in (3, 20, dock_end - 4):
+        parts.append(_rect(x, waterline + 2, 2, height - waterline - 2, c["wood"]))
+    deserters = [players[position] for position in result.deserters]
+    # A lone captain who sinks makes the deserters jump for joy: they were right.
+    cheering = result.lone_captain and not result.success
+    for index, player in enumerate(deserters):
+        if cheering:
+            parts.append(
+                f'<g class="animate-cheer" style="animation-delay: {1.5 + index * 0.1:.1f}s">'
+            )
+        parts.extend(_mini(player, "mini_sailor", 2 + index * 6, waterline - 10))
+        if cheering:
+            parts.append("</g>")
+
+    # The ship moored next to the dock, with the captain and crew on deck. Everything
+    # inside the <g> moves together: it sails away or sinks.
+    ship_x, deck = 48, waterline - 4
+    animation = "animate-sail-away sail-away" if result.success else "animate-sink sink"
+    parts.append(f'<g class="{animation}">')
+    parts.extend(_ship(ship_x, deck))
+    on_board = [result.captain, *result.crew]
+    spacing = min(6, 26 // len(on_board))
+    for index, position in enumerate(on_board):
+        kind = "mini_captain" if position == result.captain else "mini_sailor"
+        parts.extend(_mini(players[position], kind, ship_x + 2 + index * spacing, deck - 8))
+    if result.lone_captain and result.success:
+        # A lone captain who makes it keeps all the loot: a sparkling treasure chest.
+        chest_x = ship_x + 9
+        parts.extend(_rects(SPRITES["chest"], dx=chest_x, dy=deck - 6))
+        parts.append('<g class="animate-twinkle">')
+        for x, y in ((1, -3), (6, -2), (3, -5)):
+            parts.append(_rect(chest_x + x, deck - 6 + y, 1, 1, c["cream"]))
+        parts.append("</g>")
+    parts.append("</g>")
+
+    if not result.success:
+        # The explosion is drawn twice as big (scale) so it covers the whole ship.
+        parts.append(
+            f'<g class="animate-boom"><g transform="translate({ship_x + 5} {deck - 16}) scale(2)">'
+        )
+        parts.extend(_rects(SPRITES["boom"]))
+        parts.append("</g></g>")
+        # Water in front of the ship, so it disappears below the surface as it sinks.
+        parts.append(_rect(ship_x - 4, waterline + 1, 40, height - waterline - 1, c["night"]))
+
+    label = (
+        "El barco zarpa con la tripulación y deja a los desertores en el muelle"
+        if result.success
+        else "El barco explota y se hunde con la tripulación"
+    )
+    return mark_safe(
+        f'<svg viewBox="0 0 {width} {height}" shape-rendering="crispEdges" '
+        f'class="block h-auto w-full overflow-hidden" role="img" aria-label="{label}">'
+        f"{''.join(parts)}</svg>"
+    )
+
+
+def _mini(player, kind, x, y):
+    """A small figure in the player's colour."""
+    palette = {**PALETTE, "C": escape(player["background"])}
+    return _rects(SPRITES[kind], dx=x, dy=y, palette=palette)
+
+
+def _ship(x, deck):
+    """A small sailing ship: mast, two sails and a flag over a wooden hull."""
+    c = SCENE_COLOURS
+    parts = [_rect(x + 14, deck - 18, 1, 18, c["black"]), _rect(x + 15, deck - 18, 4, 2, c["red"])]
+    for row in range(12):  # main sail, getting wider towards the bottom
+        parts.append(_rect(x + 15, deck - 15 + row, 1 + row * 9 // 12, 1, c["cream"]))
+    for row in range(8):  # small sail at the front
+        parts.append(_rect(x + 13 - row * 6 // 8, deck - 10 + row, 1 + row * 6 // 8, 1, c["cream"]))
+    parts.append(_rect(x, deck, 30, 1, c["black"]))  # deck
+    for row, inset in enumerate((0, 1, 2, 3)):  # hull, narrower at the bottom
+        parts.append(_rect(x + inset, deck + 1 + row, 30 - inset * 2, 1, c["wood"]))
+        parts.append(_rect(x + inset, deck + 1 + row, 1, 1, c["black"]))
+        parts.append(_rect(x + 29 - inset, deck + 1 + row, 1, 1, c["black"]))
+    parts.append(_rect(x + 4, deck + 5, 22, 1, c["black"]))  # keel
+    return parts

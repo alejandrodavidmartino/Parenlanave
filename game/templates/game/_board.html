@@ -92,12 +92,17 @@
   {% if result %}
     <p class="text-center text-2xl text-px-silver">La respuesta era</p>
     <p class="text-center font-pixel text-4xl" data-spin="{{ result.answer }}">{{ result.answer }}</p>
-    <div class="box-px animate-pop border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
-      {% if result.success %}{% sprite "anchor" 4 %}{% else %}{% sprite "skull" 4 %}{% endif %}
-      <p class="mt-2 animate-blink font-pixel text-xs leading-relaxed uppercase">
-        {% if result.success %}¡Barco atracado!{% else %}¡Naufragio!{% endif %}
+    {# The ship sails away with the crew, or blows up and sinks. Deserters stay on the dock. #}
+    <div class="box-px p-0">{% voyage_scene result players %}</div>
+    <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
+      <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
+        {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}
       </p>
-      {% if result.lone_captain %}<p class="text-xl">(capitán solitario)</p>{% endif %}
+      {% if result.lone_captain %}
+        <p class="text-xl">
+          {% if result.success %}¡Capitán solitario! Se lleva todo el botín.{% else %}Se hunde solo… ¡y los desertores lo celebran!{% endif %}
+        </p>
+      {% endif %}
       <p class="text-xl">{{ captain_name }} apostó {{ result.bid }}{% if result.success %} y no se pasó{% else %} y se pasó{% endif %}.</p>
     </div>
 
