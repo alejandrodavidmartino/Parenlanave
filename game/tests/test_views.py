@@ -553,3 +553,40 @@ def test_reloading_the_page_does_not_play_the_suspense_again(client, game):
     response = client.get(url("detail", game))
 
     assert "data-reveal" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_revealed_round_lists_who_is_aboard_and_who_stayed_on_the_dock(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    play(client, game, "leave")
+    play(client, game, "stay")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    aboard = [player["name"] for player in response.context["aboard"]]
+    ashore = [player["name"] for player in response.context["ashore"]]
+    captain = game.players.all()[refresh(game).load_round().captain].name
+    assert aboard[0] == captain  # the captain goes first, with the anchor
+    assert len(aboard) == 2 and len(ashore) == 1
+    assert "A bordo:" in response.content.decode()
+    assert "En el muelle:" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_tells_the_opener_to_bid(client, game):
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "Te toca abrir: di el primer número." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_shows_the_captain_and_bid_to_beat(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    captain = refresh(game).players.all()[refresh(game).load_round().captain].name
+    content = response.content.decode()
+    assert f"Capitán: {captain} con" in content
+    assert "nadie más mire" not in content
