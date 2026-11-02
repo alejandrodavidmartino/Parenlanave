@@ -150,3 +150,21 @@ def test_round_in_progress_is_saved_and_loaded_from_the_database(three_questions
     assert reloaded == round_
     assert reloaded.captain == game.opener
     assert reloaded.current_bid == 100
+
+
+@pytest.mark.django_db
+def test_phase_follows_the_round(three_questions):
+    game = Game.start(NAMES)
+    assert game.phase == "not_started"
+
+    game.next_round(random.Random(1))
+    assert game.phase == "opening"
+
+    game.open_round(100)
+    assert game.phase == "playing"
+
+    round_ = game.load_round()
+    engine.stay(round_, round_.turn_index)
+    engine.stay(round_, round_.turn_index)
+    game.save_round(round_)
+    assert game.phase == "round_over"
