@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 
 from . import engine
 from .forms import NewGameForm
-from .models import Game
+from .models import PLAYER_COLOURS, Game
 
 INVALID_MOVE = "Esa jugada no está permitida."
 
@@ -28,9 +28,12 @@ def new_game(request):
     """Show the new game form and, when it is sent, create the game."""
     form = NewGameForm(request.POST or None)
     if form.is_valid():
-        game = Game.start(form.cleaned_data["names"], form.cleaned_data["total_rounds"])
+        data = form.cleaned_data
+        game = Game.start(data["names"], data["total_rounds"], data["colours"])
         return redirect("game:detail", pk=game.pk)
-    return render(request, "game/new_game.html", {"form": form})
+    # The colour button needs every colour, in order: [["red", "#ff004d", "#fff1e8"], ...].
+    colours = [[key, background, text] for key, (_, background, text) in PLAYER_COLOURS.items()]
+    return render(request, "game/new_game.html", {"form": form, "colours": colours})
 
 
 def game_detail(request, pk):
@@ -142,13 +145,15 @@ def _board_context(game, error=None):
 
     # Who has to take the phone now. Not after an error: the same player tries again.
     if error is None and phase == "opening":
-        context["handoff_name"] = context["opener_name"]
+        context["handoff"] = players[game.opener]
     elif error is None and phase == "playing":
-        context["handoff_name"] = context["turn_name"]
+        context["handoff"] = players[round_.turn_index]
 
     context["players"] = [
         {
             "name": player.name,
+            "background": player.background,
+            "text_colour": player.text_colour,
             "coins": player.coins,
             "captain": round_ is not None and round_.captain == player.position,
             "left": round_ is not None
