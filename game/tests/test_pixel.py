@@ -1,6 +1,8 @@
+import re
+
 from django.template import Context, Template
 
-from game.templatetags.pixel import SPRITES, sprite
+from game.templatetags.pixel import SPRITES, sprite, title_scene
 
 
 def render(text):
@@ -39,3 +41,21 @@ def test_sprite_with_label_is_announced_and_escaped():
 def test_every_sprite_is_a_rectangle():
     for name, rows in SPRITES.items():
         assert len({len(row) for row in rows}) == 1, name
+
+
+def test_title_scene_fits_its_120_by_90_canvas():
+    svg = title_scene()
+
+    assert 'viewBox="0 0 120 90"' in svg
+    assert 'aria-label="Un pirata en un muelle de madera mira un barco al atardecer"' in svg
+    assert 'class="animate-bob"' in svg  # the ship bobs on the sea
+
+
+def test_title_scene_draws_everything_inside_the_canvas():
+    svg = title_scene()
+
+    for x, y, width, height in re.findall(
+        r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"', svg
+    ):
+        assert int(x) + int(width) <= 120
+        assert int(y) + int(height) <= 90
