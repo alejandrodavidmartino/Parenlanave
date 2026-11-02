@@ -25,6 +25,7 @@
   --animate-hop: px-hop 0.4s steps(2) 2 both;
   --animate-pop: px-pop 0.4s steps(4) both;
   --animate-grow: px-grow 0.8s steps(6) both;
+  --animate-bob: px-bob 2.4s steps(1) infinite;
 
   @keyframes px-blink {
     50% { opacity: 0; }
@@ -41,13 +42,20 @@
     from { transform: scaleY(0); }
     to { transform: scaleY(1); }
   }
+  @keyframes px-bob {
+    50% { transform: translateY(1px); }
+  }
 }
 
-/* Some people get dizzy with movement and ask their phone to reduce it. */
+/* Some people get dizzy with movement and ask their phone to reduce it. Players can
+   also turn animations off in Opciones, which adds the no-anim class to <html>. */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation: none !important;
   }
+}
+.no-anim *, .no-anim ::before, .no-anim ::after {
+  animation: none !important;
 }
 
 /* Corners cut in steps, like old game windows. */

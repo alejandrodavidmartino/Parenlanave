@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Reglas · Atraquen el barco{% endblock %}
+
+{% block content %}
+  <div class="box-px space-y-3 bg-px-night text-px-cream">
+    {% include "game/_rules.html" %}
+  </div>
+  <a href="{% url 'game:title' %}" class="btn-px mt-4 bg-px-lilac text-px-cream">◀ Volver</a>
+{% endblock %}

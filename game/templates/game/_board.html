@@ -131,7 +131,7 @@
         </div>
       {% endfor %}
     </div>
-    <a href="{% url 'game:home' %}" class="btn-px bg-px-lilac text-px-cream">Nueva partida ▶</a>
+    <a href="{% url 'game:new' %}" class="btn-px bg-px-lilac text-px-cream">Nueva partida ▶</a>
   {% endif %}
 
   {% if phase == "not_started" or phase == "revealed" %}

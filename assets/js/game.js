@@ -1,9 +1,28 @@
+// Animations are off if the phone asks for less movement or the player turned them
+// off in Opciones (saved in this browser with localStorage).
+function animationsOn() {
+  return (
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    !document.documentElement.classList.contains("no-anim")
+  );
+}
+
+// Opciones: switch animations on or off and remember the choice on this phone.
+function toggleAnimations() {
+  const off = document.documentElement.classList.toggle("no-anim");
+  try {
+    localStorage.setItem("animations", off ? "off" : "on");
+  } catch {
+    // Private browsing can block localStorage: the switch still works until reload.
+  }
+}
+
 // Slot machine effect: numbers marked with data-spin show random digits for a moment
 // before stopping on the real value. Used to reveal the answer.
 function spinNumbers(root) {
   root.querySelectorAll("[data-spin]").forEach((element) => {
     const target = element.dataset.spin;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!animationsOn()) {
       element.textContent = target;
       return;
     }
