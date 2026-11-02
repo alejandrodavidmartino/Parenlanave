@@ -405,3 +405,39 @@ def test_podium_puts_the_winner_in_the_middle(client, game):
     podium = response.context["podium"]
     assert [step["place"] for step in podium] == [2, 1, 3]
     assert podium[1]["name"] == response.context["winners"][0]
+
+
+# "+ Añadir jugador" on the home screen.
+
+
+def test_home_shows_three_name_boxes_and_hides_the_rest(client):
+    content = client.get(HOME).content.decode()
+
+    assert content.count("<div data-player >") == 3
+    assert content.count("<div data-player hidden>") == 5
+    assert "+ Añadir jugador" in content
+
+
+@pytest.mark.django_db
+def test_names_typed_before_an_error_stay_visible(client):
+    response = client.post(HOME, new_game_data("Ana", "", "", "", "Luis"))  # only 2 names
+
+    content = response.content.decode()
+    assert content.count("<div data-player >") == 5  # up to the box with "Luis"
+    assert 'value="Luis"' in content
+
+
+@pytest.mark.django_db
+def test_add_player_button_disappears_when_every_box_shows(client):
+    names = ["Ana", "Luis", "Marta", "Pablo", "Eva", "Juan", "Sara", ""]
+
+    response = client.post(HOME, {**new_game_data(*names), "total_rounds": 0})  # rounds error
+
+    content = response.content.decode()
+    assert content.count("<div data-player >") == 7
+    assert "+ Añadir jugador" in content
+
+    names[-1] = "Leo"
+    response = client.post(HOME, {**new_game_data(*names), "total_rounds": 0})
+
+    assert "+ Añadir jugador" not in response.content.decode()
