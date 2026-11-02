@@ -7,7 +7,7 @@
 - Quiero entender el código, no solo copiarlo: explica las decisiones de diseño.
 
 ## El proyecto
-Juego web de estimación numérica por turnos (inspirado en un juego de mesa, pero con nombre, diseño y preguntas propias: **no usar el nombre, diseño ni preguntas del juego original**). Nombre del repo provisional: `Proyecto1Povisional`.
+Juego web de estimación numérica por turnos (inspirado en un juego de mesa, pero con nombre, diseño y preguntas propias: **no usar el nombre, diseño ni preguntas del juego original**). Nombre del juego: **Atraquen el barco** (los jugadores son la tripulación del barco y quien apuesta más alto es el capitán).
 
 ## Stack y herramientas
 - Python 3.13/3.14, Django 6.1 (actualizar a 6.2 LTS cuando salga, abril 2027).
@@ -34,11 +34,11 @@ Juego web de estimación numérica por turnos (inspirado en un juego de mesa, pe
 Por ronda:
 1. Aparece una pregunta con respuesta numérica.
 2. El primer jugador dice un número y se convierte en capitán. Quién abre cada ronda se elige **al azar**.
-3. Por turnos, cada jugador que siga en la nave elige:
+3. Por turnos, cada jugador que siga en el barco elige:
    - **Subirse/quedarse**: apoya la apuesta actual.
    - **Bajarse**: queda fuera hasta el final de la ronda (no puede volver).
    - **Subir la apuesta**: dice un número **estrictamente mayor** y pasa a ser el nuevo capitán.
-4. Tras una subida, todos los que siguen en la nave vuelven a decidir cuando les toca (ocurre de forma natural porque el turno da la vuelta completa antes de volver al capitán).
+4. Tras una subida, todos los que siguen en el barco vuelven a decidir cuando les toca (ocurre de forma natural porque el turno da la vuelta completa antes de volver al capitán).
 5. La ronda termina cuando el turno vuelve al capitán sin que nadie haya subido. El capitán no puede subir su propia apuesta. Si todos los demás se bajan, la ronda termina igualmente al volver el turno al capitán.
 6. Se revela la respuesta: la misión es un éxito si la apuesta del capitán es **≤ respuesta real**.
 
