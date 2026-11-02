@@ -21,7 +21,15 @@ def home(request):
 
 def game_detail(request, pk):
     game = get_object_or_404(Game, pk=pk)
-    return render(request, "game/game_detail.html", _board_context(game))
+    context = _board_context(game)
+    # The rules window shows the engine's scoring, so it can never get out of date.
+    context["points"] = {
+        "captain": (engine.CAPTAIN_SUCCESS, engine.CAPTAIN_FAILURE),
+        "crew": (engine.CREW_SUCCESS, engine.CREW_FAILURE),
+        "deserter": (engine.DESERTER_SUCCESS, engine.DESERTER_FAILURE),
+        "lone_captain": (engine.LONE_CAPTAIN_SUCCESS, engine.CAPTAIN_FAILURE),
+    }
+    return render(request, "game/game_detail.html", context)
 
 
 @require_POST
@@ -102,8 +110,10 @@ def _respond(request, game, error=None):
 def _board_context(game, error=None):
     """Everything the board template needs, already worked out."""
     players = list(game.players.all())
+    phase = game.phase
     round_ = game.load_round() if game.round_state is not None else None
-    context = {"game": game, "phase": game.phase, "error": error, "round": round_}
+    result = game.result() if game.round_scores is not None else None
+    context = {"game": game, "phase": phase, "error": error, "round": round_, "result": result}
 
     if game.opener is not None:
         context["opener_name"] = players[game.opener].name
@@ -111,10 +121,12 @@ def _board_context(game, error=None):
         context["captain_name"] = players[round_.captain].name
         context["turn_name"] = players[round_.turn_index].name
         context["next_bid"] = round_.current_bid + 1
-    if game.round_scores is not None:
-        context["result"] = game.result()
-    if context["phase"] == "game_over":
-        context["winners"] = [player.name for player in game.winners()]
+
+    # Who has to take the phone now. Not after an error: the same player tries again.
+    if error is None and phase == "opening":
+        context["handoff_name"] = context["opener_name"]
+    elif error is None and phase == "playing":
+        context["handoff_name"] = context["turn_name"]
 
     context["players"] = [
         {
@@ -123,10 +135,35 @@ def _board_context(game, error=None):
             "captain": round_ is not None and round_.captain == player.position,
             "left": round_ is not None
             and round_.players[player.position].status == engine.PlayerStatus.LEFT,
+            "turn": phase == "playing" and round_.turn_index == player.position,
+            "role": _role(result, player.position),
             "score": (
                 game.round_scores[player.position] if game.round_scores is not None else None
             ),
         }
         for player in players
     ]
+    # sorted() keeps the turn order between players with the same coins.
+    context["ranking"] = sorted(context["players"], key=lambda player: -player["coins"])
+
+    if phase == "game_over":
+        context["winners"] = [player.name for player in game.winners()]
+        # Podium order on screen: 2nd, 1st, 3rd.
+        top = context["ranking"][:3]
+        context["podium"] = [
+            {"place": place, "name": top[place - 1]["name"], "height": height}
+            for place, height in ((2, 72), (1, 104), (3, 48))
+            if place <= len(top)
+        ]
     return context
+
+
+def _role(result, position):
+    """Captain, crew member or deserter in the finished round (see RULES.md glossary)."""
+    if result is None:
+        return None
+    if position == result.captain:
+        return "capitán"
+    if position in result.crew:
+        return "tripulante"
+    return "desertor"
