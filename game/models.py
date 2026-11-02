@@ -38,6 +38,9 @@ class Game(models.Model):
     opener = models.PositiveSmallIntegerField(null=True, blank=True)
     # The engine's Round saved as JSON. Empty until the opener makes their bid.
     round_state = models.JSONField(null=True, blank=True)
+    # Coins each player won or lost this round, by position. Empty until the answer
+    # is revealed.
+    round_scores = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -65,9 +68,13 @@ class Game(models.Model):
             return "not_started"
         if self.round_state is None:
             return "opening"  # waiting for the opener's bid
-        if self.load_round().is_over:
-            return "round_over"
-        return "playing"
+        if not self.load_round().is_over:
+            return "playing"
+        if self.round_scores is None:
+            return "round_over"  # waiting for the answer to be revealed
+        if self.current_round >= self.total_rounds:
+            return "game_over"
+        return "revealed"
 
     def next_round(self, rng: random.Random) -> None:
         """Move on to the next round: a question not asked yet in this game (R6) and a
@@ -85,6 +92,7 @@ class Game(models.Model):
             self.current_question_id = rng.choice(unasked)
             self.opener = engine.choose_opener(self.players.count(), rng)
             self.round_state = None
+            self.round_scores = None
             self.save()
             self.asked_questions.add(self.current_question_id)
 
@@ -92,6 +100,28 @@ class Game(models.Model):
         """The opener makes the opening bid and the round starts (R8)."""
         names = [player.name for player in self.players.all()]
         self.save_round(engine.start_round(names, self.opener, opening_bid))
+
+    def result(self) -> engine.RoundResult:
+        """What happened in the finished round, compared with the real answer (R20)."""
+        return engine.finish_round(self.load_round(), self.current_question.answer)
+
+    def reveal(self) -> None:
+        """Reveal the answer and give or take each player's coins (R21-R25)."""
+        deltas = engine.score_round(self.result())
+        players = list(self.players.all())
+        new_coins = engine.apply_scores([player.coins for player in players], deltas)
+        for player, coins in zip(players, new_coins, strict=True):
+            player.coins = coins
+
+        with transaction.atomic():
+            Player.objects.bulk_update(players, ["coins"])
+            self.round_scores = [deltas[player.position] for player in players]
+            self.save(update_fields=["round_scores"])
+
+    def winners(self) -> list["Player"]:
+        """The players with the most coins. Ties share the win (R4)."""
+        players = list(self.players.all())
+        return [players[i] for i in engine.winners([player.coins for player in players])]
 
     def load_round(self) -> engine.Round:
         """The current round, rebuilt from the database."""
