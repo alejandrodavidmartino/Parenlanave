@@ -108,7 +108,8 @@ def reveal(request, pk):
     if game.phase != "round_over":
         return _respond(request, game, error=INVALID_MOVE)
     game.reveal()
-    return _respond(request, game)
+    # Only right after revealing: the full screen suspense scene. Reloading skips it.
+    return _respond(request, game, dramatic=True)
 
 
 def _read_bid(request) -> int:
@@ -118,9 +119,10 @@ def _read_bid(request) -> int:
         raise engine.InvalidMoveError("The bid is not a whole number") from None
 
 
-def _respond(request, game, error=None):
+def _respond(request, game, error=None, dramatic=False):
     """With HTMX, send back only the board. Without it, the whole page."""
     context = _board_context(game, error)
+    context["dramatic_reveal"] = dramatic
     if request.htmx:
         return render(request, "game/_board.html", context)
     if error:
