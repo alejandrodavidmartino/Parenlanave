@@ -12,12 +12,12 @@ Fuente de verdad del motor (`game/engine.py`). Cada regla tiene un identificador
   revelar la respuesta y repartir las monedas. El turno puede dar varias vueltas a la
   mesa dentro de una misma ronda.
 - **Turno**: el momento en que un jugador hace una acción (quedarse, bajarse o subir).
-- **Nave**: el grupo de jugadores que siguen en juego durante la ronda.
+- **Barco**: el grupo de jugadores que siguen en juego durante la ronda.
 - **Apuesta**: un número que alguien dice como respuesta a la pregunta.
 - **Capitán**: el jugador que ha hecho la apuesta más alta hasta el momento.
-- **Tripulación**: los jugadores que siguen dentro de la nave al final de la ronda, sin
+- **Tripulación**: los jugadores que siguen dentro del barco al final de la ronda, sin
   contar al capitán.
-- **Desertores**: los jugadores que se han bajado de la nave durante la ronda.
+- **Desertores**: los jugadores que se han bajado del barco durante la ronda.
 
 ## Partida
 
@@ -29,7 +29,7 @@ Fuente de verdad del motor (`game/engine.py`). Cada regla tiene un identificador
 
 ## Preparación de la ronda
 
-- **R5.** Al empezar cada ronda, todos los jugadores están **dentro de la nave**, también
+- **R5.** Al empezar cada ronda, todos los jugadores están **dentro del barco**, también
   los que se bajaron en la ronda anterior.
 - **R6.** En cada ronda aparece una pregunta cuya respuesta es un número.
 - **R7.** El jugador que abre la ronda se elige **al azar** entre todos los jugadores.
@@ -50,15 +50,15 @@ Fuente de verdad del motor (`game/engine.py`). Cada regla tiene un identificador
 
 ## Acciones
 
-En su turno, cada jugador que sigue dentro de la nave elige una de estas acciones:
+En su turno, cada jugador que sigue dentro del barco elige una de estas acciones:
 
 - **R12. Quedarse:** apoya la apuesta actual. No cambia nada más y el turno pasa al
   siguiente.
-- **R13. Bajarse:** sale de la nave hasta el final de la ronda. **No puede volver a
+- **R13. Bajarse:** sale del barco hasta el final de la ronda. **No puede volver a
   subir** en esa ronda.
 - **R14. Subir la apuesta:** dice un número **estrictamente mayor** que la apuesta actual
   y pasa a ser el **nuevo capitán**. Un número igual o menor no es válido.
-- **R15.** El capitán anterior **sigue dentro de la nave** como uno más: cuando le toque,
+- **R15.** El capitán anterior **sigue dentro del barco** como uno más: cuando le toque,
   podrá quedarse, bajarse o volver a subir.
 - **R16.** El capitán **no puede subir su propia apuesta**.
 
