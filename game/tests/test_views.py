@@ -409,12 +409,15 @@ def test_podium_puts_the_winner_in_the_middle(client, game):
 
 # "+ Añadir jugador" on the home screen.
 
+VISIBLE_ROW = '<div data-player class="flex gap-2">'
+HIDDEN_ROW = '<div data-player class="flex gap-2" hidden>'
+
 
 def test_home_shows_three_name_boxes_and_hides_the_rest(client):
     content = client.get(HOME).content.decode()
 
-    assert content.count("<div data-player >") == 3
-    assert content.count("<div data-player hidden>") == 5
+    assert content.count(VISIBLE_ROW) == 3
+    assert content.count(HIDDEN_ROW) == 5
     assert "+ Añadir jugador" in content
 
 
@@ -423,7 +426,7 @@ def test_names_typed_before_an_error_stay_visible(client):
     response = client.post(HOME, new_game_data("Ana", "", "", "", "Luis"))  # only 2 names
 
     content = response.content.decode()
-    assert content.count("<div data-player >") == 5  # up to the box with "Luis"
+    assert content.count(VISIBLE_ROW) == 5  # up to the box with "Luis"
     assert 'value="Luis"' in content
 
 
@@ -434,10 +437,70 @@ def test_add_player_button_disappears_when_every_box_shows(client):
     response = client.post(HOME, {**new_game_data(*names), "total_rounds": 0})  # rounds error
 
     content = response.content.decode()
-    assert content.count("<div data-player >") == 7
+    assert content.count(VISIBLE_ROW) == 7
     assert "+ Añadir jugador" in content
 
     names[-1] = "Leo"
     response = client.post(HOME, {**new_game_data(*names), "total_rounds": 0})
 
     assert "+ Añadir jugador" not in response.content.decode()
+
+
+# Player colours.
+
+
+@pytest.mark.django_db
+def test_players_get_the_colours_chosen_in_the_form(client):
+    data = new_game_data("Ana", "Luis", "Marta")
+    data.update(colour_1="green", colour_2="pink", colour_3="brown")
+
+    client.post(HOME, data)
+
+    colours = [player.colour for player in Game.objects.get().players.all()]
+    assert colours == ["green", "pink", "brown"]
+
+
+@pytest.mark.django_db
+def test_without_colours_each_player_gets_a_different_default(client):
+    client.post(HOME, new_game_data("Ana", "", "Luis", "Marta"))
+
+    colours = [player.colour for player in Game.objects.get().players.all()]
+    assert colours == ["red", "yellow", "green"]  # the defaults of rows 1, 3 and 4
+
+
+@pytest.mark.django_db
+def test_two_players_with_the_same_colour_shows_an_error(client):
+    data = new_game_data("Ana", "Luis", "Marta")
+    data.update(colour_1="green", colour_2="green", colour_3="brown")
+
+    response = client.post(HOME, data)
+
+    assert "Cada jugador necesita un color distinto." in response.content.decode()
+    assert not Game.objects.exists()
+
+
+def test_each_name_box_has_a_colour_button(client):
+    content = client.get(HOME).content.decode()
+
+    assert content.count('onclick="cycleColour(this)"') == 8
+    assert 'id="player-colours"' in content
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_curtain_uses_the_players_colour(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    player = refresh(game).players.all()[refresh(game).load_round().turn_index]
+    content = response.content.decode()
+    assert f"background: {player.muted_background}" in content  # toned down, kind to the eyes
+    assert f"border-color: {player.background}" in content  # the bright colour frames the sailor
+    assert f'fill="{player.background}"' in content  # the sailor's stripes
+
+
+def test_colour_buttons_show_how_to_change_the_colour(client):
+    content = client.get(HOME).content.decode()
+
+    assert content.count(">↻</button>") == 8
+    assert "para cambiar el color" in content

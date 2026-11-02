@@ -47,8 +47,43 @@ htmx.onLoad(spinNumbers);
 function addPlayer(button) {
   const next = document.querySelector("[data-player][hidden]");
   next.hidden = false;
+  // Its default colour may have been picked by someone else meanwhile.
+  if (coloursTaken(next).includes(colourInput(next).value)) {
+    cycleColour(next.querySelector("button"));
+  }
   next.querySelector("input").focus();
   if (!document.querySelector("[data-player][hidden]")) {
     button.remove();
   }
+}
+
+// Player colours: the square next to each name. Tapping it gives that player the next
+// colour in the list that no other visible player has, so colours never repeat.
+function cycleColour(button) {
+  const row = button.closest("[data-player]");
+  const input = colourInput(row);
+  const colours = JSON.parse(document.getElementById("player-colours").textContent);
+  const keys = colours.map(([key]) => key);
+  const taken = coloursTaken(row);
+  const start = keys.indexOf(input.value);
+  for (let step = 1; step <= keys.length; step += 1) {
+    const [key, background, text] = colours[(start + step) % keys.length];
+    if (!taken.includes(key)) {
+      input.value = key;
+      button.style.background = background;
+      button.style.color = text;
+      return;
+    }
+  }
+}
+
+function colourInput(row) {
+  return row.querySelector('input[type="hidden"]');
+}
+
+// Colours of the other players that are showing on screen.
+function coloursTaken(row) {
+  return [...document.querySelectorAll("[data-player]:not([hidden])")]
+    .filter((other) => other !== row)
+    .map((other) => colourInput(other).value);
 }

@@ -2,17 +2,18 @@
 {# The part of the game page that changes. HTMX swaps it after every move. #}
 <div id="board" class="space-y-4">
 
-  {% if handoff_name %}
-    {# Full screen "pass the phone" curtain. Tapping the button just hides it. #}
-    <div data-handoff class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-px-orange p-6 text-center text-px-black">
+  {% if handoff %}
+    {# Full screen "pass the phone" curtain in the player's colour. Tapping the button just hides it. #}
+    <div data-handoff class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 p-6 text-center text-px-cream"
+         style="background: {{ handoff.muted_background }}">
       {% sprite "phone" 5 %}
       <p class="text-3xl">Pasa el móvil a</p>
-      <p class="font-pixel text-2xl leading-relaxed uppercase">{{ handoff_name }}</p>
-      <div class="notch bg-px-black p-4">{% sprite "face" 8 %}</div>
+      <p class="font-pixel text-2xl leading-relaxed uppercase">{{ handoff.name }}</p>
+      <div class="border-4 bg-px-black p-4" style="border-color: {{ handoff.background }}">{% sprite "sailor" 8 "" handoff.background %}</div>
       <p class="text-2xl">Que nadie más mire la pantalla</p>
       <button type="button" class="btn-px mt-2 max-w-xs bg-px-night text-px-gold"
               onclick="this.closest('[data-handoff]').remove()">
-        Soy {{ handoff_name }} ▶
+        Soy {{ handoff.name }} ▶
       </button>
     </div>
   {% endif %}
@@ -103,7 +104,10 @@
     <ul class="space-y-2">
       {% for player in players %}
         <li class="box-px flex justify-between bg-px-black py-1 {% if player.role == 'desertor' %}text-px-stone{% endif %}">
-          <span>{% if player.captain %}⚓ {% endif %}{{ player.name }} · {{ player.role }}</span>
+          <span>
+            <span class="inline-block size-3 border-2 border-px-black align-middle" style="background: {{ player.background }}"></span>
+            {% if player.captain %}⚓ {% endif %}{{ player.name }} · {{ player.role }}
+          </span>
           <span class="inline-block animate-hop font-pixel text-xs {% if player.score > 0 %}text-px-green{% elif player.score < 0 %}text-px-red{% endif %}"
                 style="animation-delay: {{ forloop.counter0 }}00ms">
             {% if player.score > 0 %}+{% endif %}{{ player.score }} {% sprite "coin" 2 %}
@@ -148,8 +152,10 @@
     {# Crew chips: who is captain, whose turn it is and who left the ship. #}
     <div class="flex flex-wrap justify-center gap-2 pt-2">
       {% for player in players %}
-        <span class="tag-px {% if player.left %}bg-px-stone text-px-silver line-through{% elif player.turn %}bg-px-cream text-px-black{% elif player.captain %}bg-px-gold text-px-black{% else %}bg-px-sea text-px-black{% endif %}">
-          {% if player.captain %}⚓{% endif %}{{ player.name }}
+        {# Each chip has the player's colour; whoever left the ship is greyed out. #}
+        <span class="tag-px {% if player.left %}bg-px-stone text-px-silver line-through{% endif %} {% if player.turn %}outline-4 outline-px-cream{% endif %}"
+              {% if not player.left %}style="background: {{ player.background }}; color: {{ player.text_colour }}"{% endif %}>
+          {% if player.turn %}▶{% endif %}{% if player.captain %}⚓{% endif %}{{ player.name }}
         </span>
       {% endfor %}
     </div>
