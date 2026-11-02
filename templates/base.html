@@ -6,10 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Atraquen el barco{% endblock %}</title>
     <script>
-      // Apply the saved option before the page is drawn, so nothing moves for a moment.
+      // Apply the saved options before the page is drawn, so nothing moves or plays
+      // for a moment. Same names as OPTION_CLASSES in game.js.
       try {
-        if (localStorage.getItem("animations") === "off") {
-          document.documentElement.classList.add("no-anim");
+        const classes = { animations: "no-anim", music: "no-music", sfx: "no-sfx" };
+        for (const [name, className] of Object.entries(classes)) {
+          if (localStorage.getItem(name) === "off") {
+            document.documentElement.classList.add(className);
+          }
         }
       } catch {}
     </script>
@@ -18,6 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     {% tailwind_css %}
     {% htmx_script %}
+    <script src="{% static 'js/sound.js' %}" defer></script>
     <script src="{% static 'js/game.js' %}" defer></script>
   </head>
   <body class="min-h-screen bg-px-night font-retro text-xl leading-tight text-px-cream"
