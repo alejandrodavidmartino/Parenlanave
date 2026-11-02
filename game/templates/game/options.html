@@ -5,16 +5,42 @@
 {% block content %}
   <h1 class="text-center font-pixel text-sm uppercase text-px-gold">Opciones</h1>
 
-  <div class="box-px mt-6 flex items-center justify-between gap-4 bg-px-black">
-    <div>
-      <p class="text-2xl">Animaciones</p>
-      <p class="text-lg text-px-silver">Tragaperras, parpadeos, monedas y el barco meciéndose.</p>
+  {# Each label follows its class on <html> (no-anim, no-music, no-sfx), so it is always #}
+  {# right with no extra JavaScript. The classes are written out in full on purpose: #}
+  {# Tailwind only creates the CSS for class names it can read in the templates. #}
+  <div class="mt-6 space-y-3">
+    <div class="box-px flex items-center justify-between gap-4 bg-px-black">
+      <div>
+        <p class="text-2xl">Animaciones</p>
+        <p class="text-lg text-px-silver">Tragaperras, parpadeos, monedas y el barco meciéndose.</p>
+      </div>
+      <button type="button" onclick="toggleOption('animations')" aria-label="Animaciones sí o no"
+              class="tag-px notch shrink-0 bg-px-green px-3 py-2 text-xs text-px-black in-[.no-anim]:bg-px-red in-[.no-anim]:text-px-cream">
+        <span class="in-[.no-anim]:hidden">Sí</span><span class="hidden in-[.no-anim]:inline">No</span>
+      </button>
     </div>
-    {# The label follows the no-anim class on <html>, so it is always right with no extra JS. #}
-    <button type="button" onclick="toggleAnimations()" aria-label="Animaciones sí o no"
-            class="tag-px notch shrink-0 bg-px-green px-3 py-2 text-xs text-px-black in-[.no-anim]:bg-px-red in-[.no-anim]:text-px-cream">
-      <span class="in-[.no-anim]:hidden">Sí</span><span class="hidden in-[.no-anim]:inline">No</span>
-    </button>
+
+    <div class="box-px flex items-center justify-between gap-4 bg-px-black">
+      <div>
+        <p class="text-2xl">Música</p>
+        <p class="text-lg text-px-silver">La canción de la portada y el suspense al revelar.</p>
+      </div>
+      <button type="button" onclick="toggleOption('music')" aria-label="Música sí o no"
+              class="tag-px notch shrink-0 bg-px-green px-3 py-2 text-xs text-px-black in-[.no-music]:bg-px-red in-[.no-music]:text-px-cream">
+        <span class="in-[.no-music]:hidden">Sí</span><span class="hidden in-[.no-music]:inline">No</span>
+      </button>
+    </div>
+
+    <div class="box-px flex items-center justify-between gap-4 bg-px-black">
+      <div>
+        <p class="text-2xl">Efectos de sonido</p>
+        <p class="text-lg text-px-silver">Los clics, la explosión y la celebración.</p>
+      </div>
+      <button type="button" onclick="toggleOption('sfx')" aria-label="Efectos de sonido sí o no"
+              class="tag-px notch shrink-0 bg-px-green px-3 py-2 text-xs text-px-black in-[.no-sfx]:bg-px-red in-[.no-sfx]:text-px-cream">
+        <span class="in-[.no-sfx]:hidden">Sí</span><span class="hidden in-[.no-sfx]:inline">No</span>
+      </button>
+    </div>
   </div>
   <p class="mt-2 text-lg text-px-silver">Se guarda en este móvil.</p>
 
