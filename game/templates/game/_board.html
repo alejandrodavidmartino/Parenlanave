@@ -2,6 +2,8 @@
 {# The part of the game page that changes. HTMX swaps it after every move. #}
 <div id="board" class="space-y-4">
 
+  {% if dramatic_reveal %}{% include "game/_reveal.html" %}{% endif %}
+
   {% if handoff %}
     {# Full screen "pass the phone" curtain in the player's colour. Tapping the button just hides it. #}
     <div data-handoff class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 p-6 text-center text-px-cream"

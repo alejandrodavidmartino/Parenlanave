@@ -359,8 +359,9 @@ def voyage_scene(result, players):
     # The ship moored next to the dock, with the captain and crew on deck. Everything
     # inside the <g> moves together: it sails away or sinks.
     ship_x, deck = 48, waterline - 4
+    # The outer <g> rocks the ship gently while everyone waits for the answer.
     animation = "animate-sail-away sail-away" if result.success else "animate-sink sink"
-    parts.append(f'<g class="{animation}">')
+    parts.append(f'<g class="animate-rock"><g class="{animation}">')
     parts.extend(_ship(ship_x, deck))
     on_board = [result.captain, *result.crew]
     spacing = min(6, 26 // len(on_board))
@@ -375,7 +376,7 @@ def voyage_scene(result, players):
         for x, y in ((1, -3), (6, -2), (3, -5)):
             parts.append(_rect(chest_x + x, deck - 6 + y, 1, 1, c["cream"]))
         parts.append("</g>")
-    parts.append("</g>")
+    parts.append("</g></g>")
 
     if not result.success:
         # The explosion is drawn twice as big (scale) so it covers the whole ship.
