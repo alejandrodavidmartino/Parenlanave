@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/* The two pixel fonts are served by our own site (assets/fonts), not by Google Fonts,
+   so players' browsers don't contact Google (privacy, GDPR). Only the Latin characters,
+   which cover Spanish. Licences: assets/fonts/OFL-*.txt. The paths are relative to the
+   compiled CSS in static/css/. */
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/press-start-2p-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "VT323";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/vt323-latin.woff2") format("woff2");
+}
+
 /* Pixel art theme: a retro 8-bit palette and two pixel fonts. */
 @theme {
   --color-px-black: #000000;
