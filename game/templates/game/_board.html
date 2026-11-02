@@ -12,7 +12,12 @@
       <p class="text-3xl">Pasa el móvil a</p>
       <p class="font-pixel text-2xl leading-relaxed uppercase">{{ handoff.name }}</p>
       <div class="border-4 bg-px-black p-4" style="border-color: {{ handoff.background }}">{% sprite "sailor" 8 "" handoff.background %}</div>
-      <p class="text-2xl">Que nadie más mire la pantalla</p>
+      {# What they'll have to do, so they can think about it while the phone changes hands. #}
+      {% if phase == "opening" %}
+        <p class="text-2xl">Te toca abrir: di el primer número.</p>
+      {% else %}
+        <p class="text-2xl">{% sprite "anchor" 2 %} Capitán: {{ captain_name }} con <strong class="font-pixel text-px-gold">{{ round.current_bid }}</strong></p>
+      {% endif %}
       <button type="button" class="btn-px mt-2 max-w-xs bg-px-night text-px-gold"
               onclick="this.closest('[data-handoff]').remove()">
         Soy {{ handoff.name }} ▶
@@ -96,6 +101,7 @@
     <p class="text-center font-pixel text-4xl" data-spin="{{ result.answer }}">{{ result.answer }}</p>
     {# The ship sails away with the crew, or blows up and sinks. Deserters stay on the dock. #}
     <div class="box-px p-0">{% voyage_scene result players %}</div>
+    {% include "game/_voyage_legend.html" %}
     <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
       <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
         {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}

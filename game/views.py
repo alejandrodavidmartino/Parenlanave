@@ -171,6 +171,12 @@ def _board_context(game, error=None):
     # sorted() keeps the turn order between players with the same coins.
     context["ranking"] = sorted(context["players"], key=lambda player: -player["coins"])
 
+    # Who sails with the captain and who stays on the dock, for the scene's legend.
+    if result is not None:
+        board = context["players"]
+        context["aboard"] = [board[result.captain], *(board[p] for p in result.crew)]
+        context["ashore"] = [board[p] for p in result.deserters]
+
     if phase == "game_over":
         context["winners"] = [player.name for player in game.winners()]
         # Podium order on screen: 2nd, 1st, 3rd.
