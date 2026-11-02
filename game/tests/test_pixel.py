@@ -2,7 +2,8 @@ import re
 
 from django.template import Context, Template
 
-from game.templatetags.pixel import SPRITES, sprite, title_scene
+from game.engine import RoundResult
+from game.templatetags.pixel import SPRITES, sprite, title_scene, voyage_scene
 
 
 def render(text):
@@ -65,3 +66,68 @@ def test_sprite_colour_paints_the_c_pixels():
     svg = sprite("sailor", colour="#00e436")
 
     assert 'fill="#00e436"' in svg
+
+
+# Reveal scene.
+
+
+def players(*colours):
+    return [{"background": colour} for colour in colours]
+
+
+def test_successful_voyage_sails_away_with_the_crew_on_board():
+    result = RoundResult(captain=0, crew=[1], deserters=[2], bid=10, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert "zarpa" in svg
+    ship = svg[svg.index('<g class="animate-sail-away') : svg.index("</g>")]
+    assert 'fill="#ff004d"' in ship and 'fill="#29adff"' in ship  # captain and crew
+    assert 'fill="#00e436"' not in ship  # the deserter stays on the dock
+    assert 'fill="#00e436"' in svg
+
+
+def test_failed_voyage_blows_up_and_sinks():
+    result = RoundResult(captain=0, crew=[], deserters=[1, 2], bid=99, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert 'class="animate-sink sink"' in svg
+    assert 'class="animate-boom"' in svg
+    assert "se hunde" in svg
+
+
+def test_voyage_scene_fits_eight_players():
+    result = RoundResult(captain=0, crew=[1, 2, 3, 4, 5, 6, 7], deserters=[], bid=1, answer=2)
+    colours = ["#000001", "#000002", "#000003", "#000004"] * 2
+
+    svg = voyage_scene(result, players(*colours))
+
+    for x, width in re.findall(r'<rect x="(\d+)" y="\d+" width="(\d+)"', svg):
+        assert int(x) + int(width) <= 120
+
+
+def test_lone_captain_who_makes_it_sails_away_with_a_treasure_chest():
+    result = RoundResult(captain=0, crew=[], deserters=[1, 2], bid=10, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert 'class="animate-twinkle"' in svg
+    assert 'class="animate-cheer"' not in svg
+
+
+def test_lone_captain_who_sinks_makes_the_deserters_cheer():
+    result = RoundResult(captain=0, crew=[], deserters=[1, 2], bid=99, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert svg.count('class="animate-cheer"') == 2
+    assert 'class="animate-twinkle"' not in svg
+
+
+def test_a_normal_round_has_no_chest_and_no_cheering():
+    result = RoundResult(captain=0, crew=[1], deserters=[2], bid=10, answer=20)
+
+    svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
+
+    assert "animate-twinkle" not in svg and "animate-cheer" not in svg

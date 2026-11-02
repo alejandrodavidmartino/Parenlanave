@@ -268,7 +268,7 @@ def test_reveal_shows_the_answer_and_the_coins(client, game):
 
     content = response.content.decode()
     assert "La respuesta era" in content and "88" in content
-    assert "¡Barco atracado!" in content  # 50 <= 88
+    assert "¡El barco zarpa!" in content  # 50 <= 88
     assert "+4" in content and "+2" in content
 
 
@@ -504,3 +504,27 @@ def test_colour_buttons_show_how_to_change_the_colour(client):
 
     assert content.count(">↻</button>") == 8
     assert "para cambiar el color" in content
+
+
+@pytest.mark.django_db
+def test_lone_captain_who_makes_it_takes_all_the_loot(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "10"}, **HTMX)  # 10 <= 88
+    play(client, game, "leave")
+    play(client, game, "leave")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    assert "Se lleva todo el botín." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_lone_captain_who_sinks_makes_the_deserters_celebrate(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "500"}, **HTMX)  # 500 > 88
+    play(client, game, "leave")
+    play(client, game, "leave")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    assert "¡y los desertores lo celebran!" in response.content.decode()
