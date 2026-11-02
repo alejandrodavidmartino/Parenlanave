@@ -1,0 +1,17 @@
+{# Who is who in the reveal scene: chips in each player's colour. #}
+<div class="space-y-1 text-lg">
+  <p class="flex flex-wrap items-center gap-1">
+    <span class="text-px-silver">A bordo:</span>
+    {% for player in aboard %}
+      <span class="tag-px" style="background: {{ player.background }}; color: {{ player.text_colour }}">{% if forloop.first %}⚓{% endif %}{{ player.name }}</span>
+    {% endfor %}
+  </p>
+  {% if ashore %}
+    <p class="flex flex-wrap items-center gap-1">
+      <span class="text-px-silver">En el muelle:</span>
+      {% for player in ashore %}
+        <span class="tag-px" style="background: {{ player.background }}; color: {{ player.text_colour }}">{{ player.name }}</span>
+      {% endfor %}
+    </p>
+  {% endif %}
+</div>
