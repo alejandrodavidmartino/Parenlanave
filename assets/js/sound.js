@@ -143,6 +143,58 @@ const Sound = (() => {
     tone(frequency(38), start, seconds, drone);
   }
 
+  // End ceremony: a snare drum roll that grows louder, ending with a cymbal crash.
+  function drumroll(seconds) {
+    if (!audio() || !enabled("sfx")) {
+      return;
+    }
+    stopMusic();
+    const start = context.currentTime;
+    for (let time = 0; time < seconds; time += 0.05) {
+      const volume = 0.08 + 0.3 * (time / seconds); // crescendo
+      noise(start + time, 0.05, { volume, from: 5000, to: 2500, filter: "bandpass" });
+    }
+    noise(start + seconds, 1.2, { volume: 0.4, from: 9000, to: 3000, filter: "highpass" });
+  }
+
+  // End ceremony: a short triumphant theme in C major for the winner, with a bass line.
+  // Different on purpose from the fanfare of a ship sailing away.
+  const VICTORY = [
+    [67, 0.5], [67, 0.5], [67, 0.5], [72, 1.5],
+    [70, 0.5], [72, 0.5], [74, 0.5], [76, 2],
+    [74, 0.5], [76, 0.5], [77, 0.5], [79, 2.5],
+  ];
+  const VICTORY_BASS = [[48, 3], [46, 3.5], [43, 1.5], [48, 2.5]]; // as long as the melody
+  const VICTORY_BEAT = 0.16; // seconds
+
+  function victory() {
+    if (!audio() || !enabled("sfx")) {
+      return;
+    }
+    stopMusic();
+    let time = context.currentTime;
+    for (const [note, beats] of VICTORY) {
+      tone(frequency(note), time, beats * VICTORY_BEAT * 0.95, { volume: 0.2 });
+      tone(frequency(note - 12), time, beats * VICTORY_BEAT * 0.95, { type: "triangle", volume: 0.1 });
+      time += beats * VICTORY_BEAT;
+    }
+    time = context.currentTime;
+    for (const [note, beats] of VICTORY_BASS) {
+      tone(frequency(note), time, beats * VICTORY_BEAT, { type: "triangle", volume: 0.35 });
+      time += beats * VICTORY_BEAT;
+    }
+  }
+
+  // A bright bell-like note, for each step of the podium.
+  function ding(note) {
+    if (!audio() || !enabled("sfx")) {
+      return;
+    }
+    stopMusic();
+    tone(frequency(note), context.currentTime, 0.5, { volume: 0.25 });
+    tone(frequency(note + 12), context.currentTime, 0.5, { type: "triangle", volume: 0.15 });
+  }
+
   function click() {
     if (!audio() || !enabled("sfx")) {
       return;
@@ -197,5 +249,5 @@ const Sound = (() => {
     true,
   );
 
-  return { suspense, stopMusic, explosion, celebration };
+  return { suspense, stopMusic, explosion, celebration, ding, drumroll, victory };
 })();
