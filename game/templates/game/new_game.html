@@ -18,13 +18,22 @@
       </div>
     {% endif %}
 
-    {% with visible=form.visible_players %}
+    {% with visible=form.visible_players rows=form.player_rows %}
       <div class="space-y-2">
-        {% for field in form.player_fields %}
-          <div data-player {% if forloop.counter > visible %}hidden{% endif %}>{{ field }}</div>
+        {% for row in rows %}
+          <div data-player class="flex gap-2"{% if forloop.counter > visible %} hidden{% endif %}>
+            {{ row.name }}
+            {{ row.colour }}
+            {# Tapping the square gives the player the next colour nobody else has. #}
+            <button type="button" aria-label="Cambiar color" title="Cambiar color"
+                    class="notch w-14 shrink-0 border-4 border-b-8 border-px-black text-3xl font-bold leading-none active:translate-y-0.5 active:border-b-4"
+                    style="background: {{ row.background }}; color: {{ row.text_colour }}"
+                    onclick="cycleColour(this)">↻</button>
+          </div>
         {% endfor %}
       </div>
-      {% if visible < form.player_fields|length %}
+      <p class="text-lg text-px-silver">Toca <span class="font-pixel text-sm text-px-cream">↻</span> para cambiar el color de cada jugador.</p>
+      {% if visible < rows|length %}
         <button type="button" class="btn-px bg-px-sea text-px-black" onclick="addPlayer(this)">
           + Añadir jugador
         </button>
@@ -43,4 +52,5 @@
 
     <button type="submit" class="btn-px bg-px-gold text-px-black">Zarpar ▶</button>
   </form>
+  {{ colours|json_script:"player-colours" }}
 {% endblock %}
