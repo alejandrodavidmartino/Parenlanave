@@ -1,0 +1,21 @@
+{# How to play. Shown in the Reglas screen and in the "?" window during a game. #}
+<p class="text-center font-pixel text-xs uppercase text-px-gold">Cómo se juega</p>
+<ol class="list-decimal space-y-1 pl-6">
+  <li>Quien abre dice un número y es el <strong class="text-px-gold">capitán</strong>.</li>
+  <li>Por turnos, cada uno <strong class="text-px-green">se queda</strong>, <strong class="text-px-red">se baja</strong> o <strong class="text-px-gold">sube</strong> la apuesta (y pasa a ser capitán).</li>
+  <li>Quien se baja ya no vuelve en esa ronda.</li>
+  <li>Cuando el turno vuelve al capitán sin que nadie suba, se revela la respuesta.</li>
+  <li>Si la apuesta <strong>no se pasa</strong>, el barco atraca. Si se pasa, naufraga.</li>
+</ol>
+<table class="w-full text-left">
+  <thead class="font-pixel text-[9px] uppercase text-px-silver">
+    <tr><th></th><th>Atraca</th><th>Naufraga</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>⚓ Capitán</td><td>{{ points.captain.0 }}</td><td>{{ points.captain.1 }}</td></tr>
+    <tr><td>Tripulante</td><td>{{ points.crew.0 }}</td><td>{{ points.crew.1 }}</td></tr>
+    <tr><td>Desertor</td><td>{{ points.deserter.0 }}</td><td>{{ points.deserter.1 }}</td></tr>
+    <tr><td>Capitán solitario</td><td>{{ points.lone_captain.0 }}</td><td>{{ points.lone_captain.1 }}</td></tr>
+  </tbody>
+</table>
+<p class="text-px-silver">Nadie baja de 0 monedas. Al final gana quien tenga más.</p>
