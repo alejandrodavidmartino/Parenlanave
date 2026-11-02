@@ -1,12 +1,42 @@
 {# How to play. Shown in the Reglas screen and in the "?" window during a game. #}
-<p class="text-center font-pixel text-xs uppercase text-px-gold">Cómo se juega</p>
-<ol class="list-decimal space-y-1 pl-6">
-  <li>Quien abre dice un número y es el <strong class="text-px-gold">capitán</strong>.</li>
-  <li>Por turnos, cada uno <strong class="text-px-green">se queda</strong>, <strong class="text-px-red">se baja</strong> o <strong class="text-px-gold">sube</strong> la apuesta (y pasa a ser capitán).</li>
-  <li>Quien se baja ya no vuelve en esa ronda.</li>
-  <li>Cuando el turno vuelve al capitán sin que nadie suba, se revela la respuesta.</li>
-  <li>Si la apuesta <strong>no se pasa</strong>, el barco zarpa con la tripulación. Si se pasa, naufraga.</li>
+<p class="text-center font-pixel text-xs uppercase text-px-gold">🚀 ¿Cómo se juega?</p>
+<ol class="list-decimal space-y-2 pl-6">
+  <li>
+    <strong>Empieza la ronda:</strong> un jugador dice un número y se convierte en el
+    <strong class="text-px-gold">capitán</strong>. Ese número será la apuesta inicial.
+  </li>
+  <li>
+    <strong>Turnos de los jugadores:</strong> siguiendo el orden, cada jugador debe elegir una de
+    estas tres opciones:
+    <ul class="mt-1 list-disc space-y-1 pl-5">
+      <li><strong class="text-px-green">Quedarse:</strong> acepta la apuesta y continúa a bordo.</li>
+      <li><strong class="text-px-red">Bajarse:</strong> abandona el barco y queda fuera de esa ronda.</li>
+      <li><strong class="text-px-gold">Subir la apuesta:</strong> dice un número más alto y se convierte en el nuevo capitán.</li>
+    </ul>
+  </li>
+  <li><strong>Si alguien se baja:</strong> ya no puede volver a participar en esa ronda.</li>
+  <li>
+    <strong>Fin de las apuestas:</strong> cuando el turno vuelve al capitán y nadie ha subido la
+    apuesta, se detienen las apuestas y se revela la respuesta correcta.
+  </li>
+  <li>
+    <strong>¿El barco zarpa o naufraga?</strong>
+    <ul class="mt-1 list-disc space-y-1 pl-5">
+      <li>Si la apuesta <strong>no supera</strong> la respuesta correcta: el barco <strong class="text-px-green">zarpa</strong> y ganan los jugadores que siguen a bordo.</li>
+      <li>Si la apuesta <strong>supera</strong> la respuesta correcta: el barco <strong class="text-px-red">naufraga</strong> y ganan los jugadores que se han bajado.</li>
+    </ul>
+  </li>
+  <li>
+    <strong>Nueva ronda:</strong> se formula una nueva pregunta y comienza otra vez el juego, con un
+    nuevo capitán.
+  </li>
 </ol>
+<p>
+  🏆 <strong class="text-px-gold">Objetivo:</strong> conseguir el mayor número de puntos posible
+  tomando buenas decisiones: ¿te quedas a bordo o es mejor bajarte a tiempo?
+</p>
+
+{# The scoring comes from the engine, so it never gets out of date. #}
 <table class="w-full text-left">
   <thead class="font-pixel text-[9px] uppercase text-px-silver">
     <tr><th></th><th>Zarpa</th><th>Naufraga</th></tr>
