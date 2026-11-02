@@ -7,11 +7,17 @@ function animationsOn() {
   );
 }
 
-// Opciones: switch animations on or off and remember the choice on this phone.
-function toggleAnimations() {
-  const off = document.documentElement.classList.toggle("no-anim");
+// Opciones: switch something on or off (animations, music, sound effects) and remember
+// the choice on this phone. Each option is a class on <html>: no-anim, no-music, no-sfx.
+const OPTION_CLASSES = { animations: "no-anim", music: "no-music", sfx: "no-sfx" };
+
+function toggleOption(name) {
+  const off = document.documentElement.classList.toggle(OPTION_CLASSES[name]);
+  if (name === "music" && off) {
+    Sound.stopMusic();
+  }
   try {
-    localStorage.setItem("animations", off ? "off" : "on");
+    localStorage.setItem(name, off ? "off" : "on");
   } catch {
     // Private browsing can block localStorage: the switch still works until reload.
   }
@@ -99,14 +105,16 @@ function playReveal(root) {
   if (!overlay) {
     return;
   }
+  const answer = Number(overlay.dataset.answer);
+  const bid = Number(overlay.dataset.bid);
+  const success = bid <= answer; // the same rule as the engine (R20)
   if (!animationsOn()) {
     overlay.remove(); // the board underneath already shows the result
+    playEnding(success, 0);
     return;
   }
   overlay.hidden = false;
-
-  const answer = Number(overlay.dataset.answer);
-  const bid = Number(overlay.dataset.bid);
+  Sound.suspense((800 + SUSPENSE_MS) / 1000);
   const counter = overlay.querySelector("[data-count]");
   const steps = countingSteps(answer);
   const delays = stepDelays(steps.length);
@@ -119,9 +127,9 @@ function playReveal(root) {
       index += 1;
       return;
     }
-    const success = bid <= answer; // the same rule as the engine (R20)
     counter.classList.add(success ? "text-px-green" : "text-px-red");
     overlay.querySelector("[data-voyage]").classList.remove("voyage-wait");
+    playEnding(success, 600); // in time with the ship sailing off or the explosion
     // Once the ship has sailed or sunk, go straight to the scores.
     setTimeout(() => closeReveal(overlay), 3500);
   }
@@ -151,6 +159,12 @@ function stepDelays(count) {
   const weights = Array.from({ length: count }, (_, i) => 0.3 + 2 * (i / count) ** 2);
   const total = weights.reduce((sum, weight) => sum + weight, 0);
   return weights.map((weight) => (SUSPENSE_MS * weight) / total);
+}
+
+// The suspense music stops: fanfare and cheers if the ship sails, a bang if it sinks.
+function playEnding(success, delay) {
+  Sound.stopMusic();
+  setTimeout(success ? Sound.celebration : Sound.explosion, delay);
 }
 
 // Back to the board: replay the coins jumping, which happened hidden behind the scene.
