@@ -1,8 +1,35 @@
 {% extends "base.html" %}
+{% load pixel %}
 
 {% block title %}Partida {{ game.pk }} · Atraquen el barco{% endblock %}
 
 {% block content %}
-  <h1 class="mb-2 text-2xl font-bold">Partida {{ game.pk }}</h1>
   {% include "game/_board.html" %}
+
+  {# Rules summary. It never changes during the game, so it lives outside the board. #}
+  <dialog id="rules" class="m-auto w-[90%] max-w-sm bg-transparent p-0 backdrop:bg-px-black/70">
+    <div class="box-px space-y-3 bg-px-night text-px-cream">
+      <p class="text-center font-pixel text-xs uppercase text-px-gold">Cómo se juega</p>
+      <ol class="list-decimal space-y-1 pl-6">
+        <li>Quien abre dice un número y es el <strong class="text-px-gold">capitán</strong>.</li>
+        <li>Por turnos, cada uno <strong class="text-px-green">se queda</strong>, <strong class="text-px-red">se baja</strong> o <strong class="text-px-gold">sube</strong> la apuesta (y pasa a ser capitán).</li>
+        <li>Quien se baja ya no vuelve en esa ronda.</li>
+        <li>Cuando el turno vuelve al capitán sin que nadie suba, se revela la respuesta.</li>
+        <li>Si la apuesta <strong>no se pasa</strong>, el barco atraca. Si se pasa, naufraga.</li>
+      </ol>
+      <table class="w-full text-left">
+        <thead class="font-pixel text-[9px] uppercase text-px-silver">
+          <tr><th></th><th>Atraca</th><th>Naufraga</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>⚓ Capitán</td><td>{{ points.captain.0 }}</td><td>{{ points.captain.1 }}</td></tr>
+          <tr><td>Tripulante</td><td>{{ points.crew.0 }}</td><td>{{ points.crew.1 }}</td></tr>
+          <tr><td>Desertor</td><td>{{ points.deserter.0 }}</td><td>{{ points.deserter.1 }}</td></tr>
+          <tr><td>Capitán solitario</td><td>{{ points.lone_captain.0 }}</td><td>{{ points.lone_captain.1 }}</td></tr>
+        </tbody>
+      </table>
+      <p class="text-px-silver">Nadie baja de 0 monedas. Al final gana quien tenga más.</p>
+      <form method="dialog"><button class="btn-px bg-px-lilac text-px-cream">Entendido</button></form>
+    </div>
+  </dialog>
 {% endblock %}

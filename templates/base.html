@@ -1,15 +1,20 @@
-{% load django_htmx tailwind_cli %}
+{% load django_htmx static tailwind_cli %}
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Atraquen el barco{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     {% tailwind_css %}
     {% htmx_script %}
+    <script src="{% static 'js/game.js' %}" defer></script>
   </head>
-  <body class="min-h-screen bg-slate-900 text-slate-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-    <main class="mx-auto max-w-md p-4">
+  <body class="min-h-screen bg-px-night font-retro text-xl leading-tight text-px-cream"
+        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <main class="mx-auto max-w-md px-4 py-6">
       {% block content %}{% endblock %}
     </main>
   </body>

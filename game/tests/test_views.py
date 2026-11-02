@@ -59,7 +59,7 @@ def test_game_page_shows_round_and_players(client):
     response = client.get(reverse("game:detail", kwargs={"pk": game.pk}))
 
     content = response.content.decode()
-    assert "Ronda 0 de 8" in content
+    assert "Ronda 0/8" in content
     assert "Ana" in content and "Luis" in content and "Marta" in content
 
 
@@ -97,7 +97,8 @@ def test_starting_the_game_shows_the_question_and_who_opens(client, game):
     content = response.content.decode()
     assert game.phase == "opening"
     assert "How many keys does a piano have?" in content
-    assert f"Abre la ronda: <strong>{game.players.all()[game.opener].name}" in content
+    assert "Abre la ronda:" in content
+    assert game.players.all()[game.opener].name in content
 
 
 @pytest.mark.django_db
@@ -331,3 +332,76 @@ def test_r4_a_tie_shows_every_winner(client, game):
 
     assert "Empate:" in response.content.decode()
     assert "¡Naufragio!" in response.content.decode()
+
+
+# Pixel art screen: pass the phone, rules, scoreboard and podium.
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_curtain_names_the_next_player(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    response = play(client, game, "stay")
+
+    next_player = refresh(game).players.all()[refresh(game).load_round().turn_index].name
+    content = response.content.decode()
+    assert "Pasa el móvil a" in content
+    assert f"Soy {next_player}" in content
+
+
+@pytest.mark.django_db
+def test_no_curtain_after_a_rejected_move(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    response = play(client, game, "raise", "10")  # not higher: same player tries again
+
+    assert "Pasa el móvil a" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_rules_window_shows_the_engine_scoring(client, game):
+    response = client.get(url("detail", game))
+
+    content = response.content.decode()
+    assert "Cómo se juega" in content
+    assert "<td>⚓ Capitán</td><td>4</td><td>-1</td>" in content
+
+
+@pytest.mark.django_db
+def test_scoreboard_lists_players_by_coins(client, game):
+    luis = game.players.get(name="Luis")
+    luis.coins = 9
+    luis.save()
+
+    response = client.get(url("detail", game))
+
+    ranking = response.context["ranking"]
+    assert [player["name"] for player in ranking] == ["Luis", "Ana", "Marta"]
+
+
+@pytest.mark.django_db
+def test_revealed_round_shows_each_players_role(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    play(client, game, "leave")
+    play(client, game, "stay")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    roles = sorted(player["role"] for player in response.context["players"])
+    assert roles == ["capitán", "desertor", "tripulante"]
+
+
+@pytest.mark.django_db
+def test_podium_puts_the_winner_in_the_middle(client, game):
+    game.total_rounds = 1
+    game.save()
+    finish_round(client, game)
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    podium = response.context["podium"]
+    assert [step["place"] for step in podium] == [2, 1, 3]
+    assert podium[1]["name"] == response.context["winners"][0]
