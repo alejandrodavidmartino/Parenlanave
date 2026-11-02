@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 
-from game.models import Game
+from game.models import Game, Question
 
 HOME = reverse("game:home")
 
@@ -68,3 +68,182 @@ def test_unknown_game_gives_not_found(client):
     response = client.get(reverse("game:detail", kwargs={"pk": 999}))
 
     assert response.status_code == 404
+
+
+# Playing a round. HTMX requests carry the HX-Request header.
+
+HTMX = {"HTTP_HX_REQUEST": "true"}
+
+
+@pytest.fixture
+def game():
+    Question.objects.create(text="How many keys does a piano have?", answer=88)
+    return Game.start(["Ana", "Luis", "Marta"])
+
+
+def url(name, game):
+    return reverse(f"game:{name}", kwargs={"pk": game.pk})
+
+
+def refresh(game):
+    return Game.objects.get(pk=game.pk)
+
+
+@pytest.mark.django_db
+def test_starting_the_game_shows_the_question_and_who_opens(client, game):
+    response = client.post(url("next_round", game), **HTMX)
+
+    game = refresh(game)
+    content = response.content.decode()
+    assert game.phase == "opening"
+    assert "How many keys does a piano have?" in content
+    assert f"Abre la ronda: <strong>{game.players.all()[game.opener].name}" in content
+
+
+@pytest.mark.django_db
+def test_htmx_gets_only_the_board_and_a_normal_form_gets_redirected(client, game):
+    htmx_response = client.post(url("next_round", game), **HTMX)
+
+    assert 'id="board"' in htmx_response.content.decode()
+    assert "<html" not in htmx_response.content.decode()
+
+
+@pytest.mark.django_db
+def test_without_htmx_actions_redirect_to_the_game_page(client, game):
+    response = client.post(url("next_round", game))
+
+    assert response.status_code == 302
+    assert response["Location"] == url("detail", game)
+
+
+@pytest.mark.django_db
+def test_opening_bid_starts_the_round(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    game = refresh(game)
+    assert game.phase == "playing"
+    assert game.load_round().current_bid == 50
+
+
+@pytest.mark.django_db
+def test_r9_invalid_opening_bid_shows_an_error(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "-3"}, **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+    assert refresh(game).phase == "opening"
+
+
+def play(client, game, action, bid=""):
+    turn = refresh(game).load_round().turn_index
+    return client.post(url("play", game), {"player": turn, "action": action, "bid": bid}, **HTMX)
+
+
+@pytest.mark.django_db
+def test_a_full_round_can_be_played(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    play(client, game, "raise", "70")
+    play(client, game, "leave")
+    response = play(client, game, "stay")
+
+    round_ = refresh(game).load_round()
+    assert refresh(game).phase == "round_over"
+    assert round_.current_bid == 70
+    assert "Ronda terminada" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_r14_raise_not_higher_shows_an_error_and_changes_nothing(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    before = refresh(game).round_state
+
+    response = play(client, game, "raise", "50")
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+    assert refresh(game).round_state == before
+
+
+@pytest.mark.django_db
+def test_r17_a_double_tap_from_the_previous_player_is_rejected(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+    first = refresh(game).load_round().turn_index
+    client.post(url("play", game), {"player": first, "action": "stay"}, **HTMX)
+
+    response = client.post(url("play", game), {"player": first, "action": "stay"}, **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_playing_before_the_round_starts_is_rejected(client, game):
+    response = client.post(url("play", game), {"player": 0, "action": "stay"}, **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_unknown_action_is_rejected(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    response = play(client, game, "dance")
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_actions_only_accept_post(client, game):
+    response = client.get(url("next_round", game))
+
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
+def test_next_round_is_rejected_while_a_round_is_being_played(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_next_round_explains_when_there_are_no_questions_left(client):
+    game = Game.start(["Ana", "Luis", "Marta"])  # no questions in the database
+
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "No quedan rondas o preguntas." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_opening_is_rejected_before_the_round_starts(client, game):
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_opening_bid_must_be_a_number(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "mucho"}, **HTMX)
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_without_htmx_errors_show_the_whole_page(client, game):
+    response = client.post(url("open_round", game), {"bid": "50"})
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "<html" in content
+    assert "Esa jugada no está permitida." in content
