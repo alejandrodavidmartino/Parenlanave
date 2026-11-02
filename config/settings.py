@@ -1,4 +1,4 @@
-"""Django settings for the parenlanave project.
+"""Django settings for the "Atraquen el barco" project.
 
 Values that change between environments (secret key, debug, database...) are
 read from environment variables or a local `.env` file via django-environ.
