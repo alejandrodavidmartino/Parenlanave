@@ -1,0 +1,62 @@
+{% load l10n pixel %}
+{# End of the game ceremony, after the last round's reveal. Hidden until game.js shows it; #}
+{# from then on each part appears on its own (CSS animation delays): title, the podium #}
+{# from 3rd to 1st, then everyone else and the buttons. #}
+<div data-ceremony hidden class="fixed inset-0 z-50 overflow-y-auto bg-px-night px-4 py-6">
+  {# Confetti falls in its own box, fixed to the screen, which cuts off what goes out. #}
+  <div data-confetti class="pointer-events-none fixed inset-0 overflow-hidden"></div>
+
+  <div class="relative mx-auto flex min-h-full max-w-md flex-col justify-center gap-5 text-center">
+    <p class="animate-appear font-pixel text-lg leading-relaxed text-px-gold">¡Fin de la<br>partida!</p>
+    <p class="animate-appear text-2xl text-px-silver" style="animation-delay: 0.8s">Y el podio es para…</p>
+
+    <div class="flex h-80 items-end justify-center gap-2">
+      {% for step in podium %}
+        <div class="flex w-24 flex-col items-center">
+          {% if step.place == 1 %}
+            <div class="animate-appear" style="animation-delay: {{ step.appears_at|unlocalize }}s">{% sprite "trophy" 4 %}</div>
+          {% endif %}
+          <p class="animate-appear mt-1 w-full truncate font-pixel text-[10px] uppercase" style="animation-delay: {{ step.appears_at|unlocalize }}s">{{ step.name }}</p>
+          <p class="animate-appear text-lg text-px-silver" style="animation-delay: {{ step.appears_at|unlocalize }}s">{{ step.coins }} monedas</p>
+          {# The player's own sailor, in their colour, standing on their step. #}
+          <div class="animate-appear mt-1" style="animation-delay: {{ step.appears_at|unlocalize }}s">{% sprite "sailor" 3 step.name step.background %}</div>
+          <div class="flex w-full animate-grow items-center justify-center border-4 border-px-black font-pixel text-xl"
+               style="height: {{ step.height }}px; background: {{ step.background }}; color: {{ step.text_colour }}; animation-delay: {{ step.appears_at|unlocalize }}s">
+            {{ step.place }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if others %}
+      <ol class="space-y-2">
+        {% for player in others %}
+          <li class="box-px animate-appear flex justify-between bg-px-black py-1" style="animation-delay: {{ player.appears_at|unlocalize }}s">
+            <span>
+              <span class="inline-block size-3 border-2 border-px-black align-middle" style="background: {{ player.background }}"></span>
+              {{ player.place }}.º {{ player.name }}
+            </span>
+            <span>{{ player.coins }} {% sprite "coin" 2 %}</span>
+          </li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+
+    <div class="animate-appear space-y-3" style="animation-delay: {{ buttons_appear_at|unlocalize }}s">
+      <a href="{% url 'game:new' %}" class="btn-px bg-px-gold text-px-black">Nueva partida ▶</a>
+      <button type="button" class="btn-px bg-px-lilac text-px-cream"
+              onclick="document.getElementById('final-standings').showModal()">Ver marcador</button>
+    </div>
+  </div>
+
+  {# Final scoreboard, as a pop-up window on top of the ceremony. #}
+  <dialog id="final-standings" class="m-auto w-[90%] max-w-sm bg-transparent p-0 backdrop:bg-px-black/70">
+    <div class="box-px space-y-3 bg-px-night text-px-cream">
+      <p class="text-center font-pixel text-xs uppercase text-px-gold">Clasificación final</p>
+      {% include "game/_standings.html" %}
+      <a href="{% url 'game:new' %}" class="btn-px bg-px-gold text-px-black">Nueva partida ▶</a>
+      <a href="{% url 'game:title' %}" class="btn-px bg-px-sea text-px-black">Menú principal</a>
+      <form method="dialog"><button class="btn-px bg-px-lilac text-px-cream">Cerrar</button></form>
+    </div>
+  </dialog>
+</div>

@@ -3,6 +3,7 @@
 <div id="board" class="space-y-4">
 
   {% if dramatic_reveal %}{% include "game/_reveal.html" %}{% endif %}
+  {% if dramatic_reveal and phase == "game_over" %}{% include "game/_ceremony.html" %}{% endif %}
 
   {% if handoff %}
     {# Full screen "pass the phone" curtain in the player's colour. Tapping the button just hides it. #}
@@ -177,12 +178,7 @@
   <dialog id="scoreboard" class="m-auto w-[90%] max-w-sm bg-transparent p-0 backdrop:bg-px-black/70">
     <div class="box-px space-y-2 bg-px-night text-px-cream">
       <p class="text-center font-pixel text-xs uppercase text-px-gold">Marcador</p>
-      {% for player in ranking %}
-        <div class="box-px flex justify-between py-1 {% if forloop.first %}bg-px-gold text-px-black{% else %}bg-px-black{% endif %}">
-          <span>{{ forloop.counter }} · {{ player.name }}</span>
-          <span>{{ player.coins }} {% sprite "coin" 2 %}</span>
-        </div>
-      {% endfor %}
+      {% include "game/_standings.html" %}
       <form method="dialog"><button class="btn-px bg-px-lilac text-px-cream">Cerrar</button></form>
     </div>
   </dialog>
