@@ -35,6 +35,8 @@
   --animate-cheer: px-cheer 0.4s steps(2) 1.5s 6 both;
   /* The ship rocks at the dock while the answer is being counted. */
   --animate-rock: px-rock 1.2s steps(2) infinite;
+  /* Reveal scene at night: the waves drift sideways, back and forth. */
+  --animate-waves: px-waves 1.6s steps(2) infinite;
 
   @keyframes px-blink {
     50% { opacity: 0; }
@@ -63,6 +65,9 @@
     5%, 15% { transform: translate(-1px, 0); }
     10% { transform: translate(1px, 0); }
     100% { transform: translate(0, 20px) rotate(12deg); }
+  }
+  @keyframes px-waves {
+    50% { transform: translateX(2px); }
   }
   @keyframes px-rock {
     50% { transform: translateY(1px); }

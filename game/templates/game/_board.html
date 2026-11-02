@@ -96,6 +96,7 @@
     <p class="text-center font-pixel text-4xl" data-spin="{{ result.answer }}">{{ result.answer }}</p>
     {# The ship sails away with the crew, or blows up and sinks. Deserters stay on the dock. #}
     <div class="box-px p-0">{% voyage_scene result players %}</div>
+    {% include "game/_voyage_legend.html" %}
     <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
       <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
         {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}
