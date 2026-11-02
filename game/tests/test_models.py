@@ -4,7 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 
 from game import engine
-from game.models import Game, Question
+from game.models import Game, Question, mix
 
 
 @pytest.mark.django_db
@@ -263,3 +263,26 @@ def test_r4_winners_are_the_players_with_most_coins(started_game):
     winners = started_game.winners()
 
     assert [player.position for player in winners] == [started_game.load_round().captain]
+
+
+@pytest.mark.django_db
+def test_player_colour_gives_its_css_colours():
+    game = Game.start(["Ana", "Luis", "Marta"], colours=["brown", "blue", "red"])
+
+    ana = game.players.get(name="Ana")
+
+    assert (ana.colour, ana.background, ana.text_colour) == ("brown", "#ab5236", "#fff1e8")
+
+
+def test_mix_blends_two_colours():
+    assert mix("#ffffff", "#000000", 0.5) == "#808080"
+    assert mix("#ff0000", "#0000ff", 1) == "#ff0000"
+
+
+@pytest.mark.django_db
+def test_muted_background_is_the_colour_toned_down_with_night_blue():
+    game = Game.start(["Ana", "Luis", "Marta"], colours=["yellow", "blue", "red"])
+
+    ana = game.players.get(name="Ana")
+
+    assert ana.muted_background == mix("#ffec27", "#1d2b53", 0.4)

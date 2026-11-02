@@ -124,6 +124,26 @@ SPRITES = {
         "..KKK...R...",
         ".KKKK...R...",
     ],
+    # A ship's crew member for the "pass the phone" screen. "C" is the player's colour:
+    # the band on the cap and the stripes on the shirt.
+    "sailor": [
+        "...WWWWWW...",
+        "..WWWWWWWW..",
+        "..CCCCCCCC..",
+        "...SSSSSS...",
+        "...SKSSKS...",
+        "...SSSSSS...",
+        "...SSKKSS...",
+        "....SSSS....",
+        "..CCCCCCCC..",
+        ".WWWWWWWWWW.",
+        "SCCCCCCCCCCS",
+        "SWWWWWWWWWWS",
+        ".CCCCCCCCCC.",
+        "..DDDDDDDD..",
+        "..DDD..DDD..",
+        "..KKK..KKK..",
+    ],
     # Sits on the pirate's shoulder, looking away from him.
     "parrot": [
         "..VVV.",
@@ -160,13 +180,13 @@ SCENE_COLOURS = {
 }
 
 
-def _rects(rows, dx=0, dy=0):
+def _rects(rows, dx=0, dy=0, palette=PALETTE):
     """SVG rectangles for a sprite, moved `dx`, `dy` pixels."""
     rects = []
     for y, row in enumerate(rows):
         x = 0
         while x < len(row):
-            colour = PALETTE.get(row[x])
+            colour = palette.get(row[x])
             run = 1
             # Join pixels of the same colour in a row into one rectangle.
             while x + run < len(row) and row[x + run] == row[x]:
@@ -182,18 +202,20 @@ def _rect(x, y, width, height, colour):
 
 
 @register.simple_tag
-def sprite(name, scale=4, label=""):
+def sprite(name, scale=4, label="", colour="#ff004d"):
     """Draw a sprite `scale` screen pixels per sprite pixel.
 
     Usage: {% sprite "anchor" 3 "Capitán" %}. Without a label, screen readers skip it.
+    `colour` paints the "C" pixels, for sprites that change colour (the sailor).
     """
     rows = SPRITES[name]
+    palette = {**PALETTE, "C": escape(colour)}
     width, height = len(rows[0]), len(rows)
     a11y = f'role="img" aria-label="{escape(label)}"' if label else 'aria-hidden="true"'
     return mark_safe(
         f'<svg width="{width * scale}" height="{height * scale}" viewBox="0 0 {width} {height}" '
         f'shape-rendering="crispEdges" class="inline-block align-middle" {a11y}>'
-        f"{''.join(_rects(rows))}</svg>"
+        f"{''.join(_rects(rows, palette=palette))}</svg>"
     )
 
 

@@ -5,6 +5,34 @@ from django.db import models, transaction
 
 from . import engine
 
+# Each player picks a colour so everyone can tell them apart on screen.
+# key: (name, background, text that reads well on that background).
+# One colour per possible player, in the order they are given out by default.
+PLAYER_COLOURS = {
+    "red": ("Rojo", "#ff004d", "#fff1e8"),
+    "blue": ("Azul", "#29adff", "#000000"),
+    "yellow": ("Amarillo", "#ffec27", "#000000"),
+    "green": ("Verde", "#00e436", "#000000"),
+    "orange": ("Naranja", "#ffa300", "#000000"),
+    "pink": ("Rosa", "#ff77a8", "#000000"),
+    "purple": ("Morado", "#83769c", "#fff1e8"),
+    "brown": ("Marrón", "#ab5236", "#fff1e8"),
+}
+
+
+def default_colours(count: int) -> list[str]:
+    """The first `count` colours, one different colour per player."""
+    return list(PLAYER_COLOURS)[:count]
+
+
+def mix(colour: str, other: str, amount: float) -> str:
+    """Blend two "#rrggbb" colours: `amount` of `colour`, the rest of `other`."""
+    channels = [
+        round(int(colour[i : i + 2], 16) * amount + int(other[i : i + 2], 16) * (1 - amount))
+        for i in (1, 3, 5)
+    ]
+    return "#" + "".join(f"{channel:02x}" for channel in channels)
+
 
 class Question(models.Model):
     """A question whose answer is a whole number, 0 or greater (R6, R9)."""
@@ -50,14 +78,23 @@ class Game(models.Model):
         return f"Game {self.pk} ({self.created_at:%d/%m/%Y %H:%M})"
 
     @classmethod
-    def start(cls, names: list[str], total_rounds: int = engine.DEFAULT_ROUNDS) -> "Game":
-        """Create a game with its players, in turn order (R1, R3)."""
+    def start(
+        cls,
+        names: list[str],
+        total_rounds: int = engine.DEFAULT_ROUNDS,
+        colours: list[str] | None = None,
+    ) -> "Game":
+        """Create a game with its players, in turn order (R1, R3).
+
+        Without `colours`, each player gets a different one by default.
+        """
         engine.check_player_count(len(names))
+        colours = colours or default_colours(len(names))
         with transaction.atomic():
             game = cls.objects.create(total_rounds=total_rounds)
             Player.objects.bulk_create(
-                Player(game=game, name=name, position=position)
-                for position, name in enumerate(names)
+                Player(game=game, name=name, position=position, colour=colour)
+                for position, (name, colour) in enumerate(zip(names, colours, strict=True))
             )
         return game
 
@@ -140,6 +177,11 @@ class Player(models.Model):
     name = models.CharField(max_length=30)
     position = models.PositiveSmallIntegerField()
     coins = models.PositiveIntegerField(default=engine.STARTING_COINS)
+    colour = models.CharField(
+        max_length=10,
+        choices=[(key, name) for key, (name, _, _) in PLAYER_COLOURS.items()],
+        default="red",
+    )
 
     class Meta:
         ordering = ["game", "position"]
@@ -149,3 +191,19 @@ class Player(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def background(self) -> str:
+        """The player's colour, ready for CSS."""
+        return PLAYER_COLOURS[self.colour][1]
+
+    @property
+    def text_colour(self) -> str:
+        """A text colour that reads well on the player's colour."""
+        return PLAYER_COLOURS[self.colour][2]
+
+    @property
+    def muted_background(self) -> str:
+        """The player's colour toned down with the game's night blue, for big areas
+        like the "pass the phone" screen, where the bright colour hurts the eyes."""
+        return mix(self.background, "#1d2b53", 0.4)
