@@ -1,0 +1,21 @@
+{% load pixel %}
+{# Full screen reveal with suspense. Hidden until game.js starts it, so without JavaScript #}
+{# (or with animations off) the board below shows the result straight away. #}
+<div data-reveal hidden data-answer="{{ result.answer }}" data-bid="{{ result.bid }}"
+     class="fixed inset-0 z-50 overflow-y-auto bg-px-night px-4 py-6">
+  <div class="mx-auto flex min-h-full max-w-lg flex-col justify-center gap-4">
+    <p class="text-center text-2xl text-px-silver">{{ game.current_question.text }}</p>
+    <p class="text-center text-2xl">
+      {% sprite "anchor" 2 %} Apuesta de {{ captain_name }}:
+      <strong class="font-pixel text-px-gold">{{ result.bid }}</strong>
+    </p>
+
+    <div data-voyage class="voyage-wait box-px p-0">{% voyage_scene result players %}</div>
+
+    <div data-suspense class="text-center">
+      <p class="text-2xl text-px-silver">La respuesta es…</p>
+      <p data-count class="font-pixel text-4xl">0</p>
+      <p class="mt-2 animate-twinkle font-pixel text-[10px] uppercase text-px-gold">¿Zarpará o se hundirá?</p>
+    </div>
+  </div>
+</div>

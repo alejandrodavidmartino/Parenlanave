@@ -528,3 +528,28 @@ def test_lone_captain_who_sinks_makes_the_deserters_celebrate(client, game):
     response = client.post(url("reveal", game), **HTMX)
 
     assert "¡y los desertores lo celebran!" in response.content.decode()
+
+
+# Full screen reveal with suspense.
+
+
+@pytest.mark.django_db
+def test_revealing_brings_the_full_screen_suspense_scene(client, game):
+    finish_round(client, game)  # Ana, Luis or Marta opened with 50; the answer is 88
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    assert 'data-reveal hidden data-answer="88" data-bid="50"' in content
+    assert "¿Zarpará o se hundirá?" in content
+    assert 'class="voyage-wait box-px p-0"' in content  # the ending waits for the counter
+
+
+@pytest.mark.django_db
+def test_reloading_the_page_does_not_play_the_suspense_again(client, game):
+    finish_round(client, game)
+    client.post(url("reveal", game), **HTMX)
+
+    response = client.get(url("detail", game))
+
+    assert "data-reveal" not in response.content.decode()
