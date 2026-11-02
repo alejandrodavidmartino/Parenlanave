@@ -26,3 +26,18 @@ def test_options_screen_has_the_animations_switch(client):
     content = response.content.decode()
     assert "Animaciones" in content
     assert 'onclick="toggleAnimations()"' in content
+
+
+def test_rules_screen_explains_every_step_of_a_round(client):
+    content = client.get(reverse("game:rules")).content.decode()
+
+    for step in (
+        "Empieza la ronda:",
+        "Turnos de los jugadores:",
+        "Si alguien se baja:",
+        "Fin de las apuestas:",
+        "¿El barco zarpa o naufraga?",
+        "Nueva ronda:",
+        "Objetivo:",
+    ):
+        assert step in content
