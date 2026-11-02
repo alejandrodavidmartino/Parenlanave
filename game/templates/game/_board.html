@@ -1,118 +1,170 @@
+{% load pixel %}
 {# The part of the game page that changes. HTMX swaps it after every move. #}
-<div id="board" class="space-y-6">
-  <p class="text-slate-300">Ronda {{ game.current_round }} de {{ game.total_rounds }}</p>
+<div id="board" class="space-y-4">
+
+  {% if handoff_name %}
+    {# Full screen "pass the phone" curtain. Tapping the button just hides it. #}
+    <div data-handoff class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-px-orange p-6 text-center text-px-black">
+      {% sprite "phone" 5 %}
+      <p class="text-3xl">Pasa el móvil a</p>
+      <p class="font-pixel text-2xl leading-relaxed uppercase">{{ handoff_name }}</p>
+      <div class="notch bg-px-black p-4">{% sprite "face" 8 %}</div>
+      <p class="text-2xl">Que nadie más mire la pantalla</p>
+      <button type="button" class="btn-px mt-2 max-w-xs bg-px-night text-px-gold"
+              onclick="this.closest('[data-handoff]').remove()">
+        Soy {{ handoff_name }} ▶
+      </button>
+    </div>
+  {% endif %}
+
+  <div class="flex items-center justify-between">
+    <span class="tag-px notch bg-px-sea text-px-black">Ronda {{ game.current_round }}/{{ game.total_rounds }}</span>
+    <div class="flex gap-2">
+      <button type="button" class="tag-px notch bg-px-cream text-px-black" aria-label="Reglas"
+              onclick="document.getElementById('rules').showModal()">?</button>
+      <button type="button" class="notch border-[3px] border-px-black bg-px-cream p-1" aria-label="Marcador"
+              onclick="document.getElementById('scoreboard').showModal()">{% sprite "trophy" 2 %}</button>
+    </div>
+  </div>
 
   {% if error %}
-    <p class="rounded-lg bg-red-900/60 p-3 text-red-100">{{ error }}</p>
+    <p class="box-px bg-px-red text-px-cream">{{ error }}</p>
   {% endif %}
 
   {% if phase != "not_started" %}
-    <div class="rounded-lg bg-slate-800 p-4">
+    <div class="box-px border-b-8 bg-px-cream text-px-night">
       {% if game.current_question.category %}
-        <p class="text-sm uppercase tracking-wide text-indigo-300">{{ game.current_question.category }}</p>
+        <span class="tag-px border-2 bg-px-pink text-px-black">{{ game.current_question.category }}</span>
       {% endif %}
-      <p class="mt-1 text-lg font-semibold">{{ game.current_question.text }}</p>
+      <p class="mt-2 text-2xl">{{ game.current_question.text }}</p>
     </div>
   {% endif %}
 
-  {% if phase == "round_over" %}
-    <p class="text-center">
-      Ronda terminada. Capitán: <strong>{{ captain_name }}</strong> con <strong>{{ round.current_bid }}</strong>.
-    </p>
-    <form hx-post="{% url 'game:reveal' game.pk %}" hx-target="#board" hx-swap="outerHTML"
-          method="post" action="{% url 'game:reveal' game.pk %}">
-      {% csrf_token %}
-      <button class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
-        Revelar la respuesta
-      </button>
-    </form>
-  {% endif %}
-
-  {% if result %}
-    <div class="rounded-lg p-4 text-center {% if result.success %}bg-emerald-900/60{% else %}bg-rose-900/60{% endif %}">
-      <p class="text-slate-300">La respuesta era</p>
-      <p class="text-4xl font-bold">{{ result.answer }}</p>
-      <p class="mt-2 text-lg font-semibold">
-        {% if result.success %}¡Barco atracado!{% else %}¡Naufragio!{% endif %}
-        {% if result.lone_captain %}(capitán solitario){% endif %}
-      </p>
-      <p class="text-sm text-slate-300">
-        {{ captain_name }} apostó {{ result.bid }}{% if result.success %}, sin pasarse{% else %} y se pasó{% endif %}.
-      </p>
+  {% if phase == "not_started" %}
+    <div class="py-6 text-center">
+      {% sprite "ship" 6 %}
+      <p class="mt-4 text-2xl text-px-silver">La tripulación está lista.</p>
     </div>
-  {% endif %}
-
-  {% if phase == "game_over" %}
-    <div class="rounded-lg bg-amber-500/20 p-4 text-center">
-      <p class="text-slate-300">Fin de la partida</p>
-      <p class="text-2xl font-bold">
-        {% if winners|length == 1 %}Gana {{ winners.0 }}{% else %}Empate: {{ winners|join:", " }}{% endif %} 🏆
-      </p>
-    </div>
-    <a href="{% url 'game:home' %}"
-       class="block w-full rounded-lg bg-indigo-500 py-3 text-center font-semibold hover:bg-indigo-400">
-      Nueva partida
-    </a>
-  {% endif %}
-
-  {% if phase == "not_started" or phase == "revealed" %}
-    <form hx-post="{% url 'game:next_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
-          method="post" action="{% url 'game:next_round' game.pk %}">
-      {% csrf_token %}
-      <button class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
-        {% if phase == "not_started" %}Empezar la partida{% else %}Siguiente ronda{% endif %}
-      </button>
-    </form>
 
   {% elif phase == "opening" %}
-    <p class="text-center text-xl">Abre la ronda: <strong>{{ opener_name }}</strong></p>
+    <p class="text-center text-2xl">Abre la ronda: <strong class="text-px-gold">{{ opener_name }}</strong></p>
     <form hx-post="{% url 'game:open_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
           method="post" action="{% url 'game:open_round' game.pk %}" class="flex gap-2">
       {% csrf_token %}
-      <input type="number" name="bid" min="0" required inputmode="numeric" placeholder="Tu número"
-             class="w-full rounded-lg bg-slate-800 px-3 py-2">
-      <button class="rounded-lg bg-indigo-500 px-4 font-semibold hover:bg-indigo-400">Apostar</button>
+      <input type="number" name="bid" min="0" required inputmode="numeric" placeholder="Tu número" class="input-px">
+      <button class="btn-px w-auto bg-px-gold px-4 text-px-black">Apostar</button>
     </form>
 
   {% elif phase == "playing" %}
-    <p class="text-center">
-      Capitán: <strong>{{ captain_name }}</strong> con <strong class="text-2xl">{{ round.current_bid }}</strong>
-    </p>
-    <p class="text-center text-xl">Le toca a <strong>{{ turn_name }}</strong></p>
+    <div class="text-center">
+      <p class="text-2xl text-px-silver">{% sprite "anchor" 2 %} Capitán: {{ captain_name }}</p>
+      <p class="mt-2 font-pixel text-4xl text-px-gold">{{ round.current_bid }}</p>
+    </div>
+    <p class="text-center text-2xl">¿Qué haces, <strong>{{ turn_name }}</strong>?</p>
 
     <form hx-post="{% url 'game:play' game.pk %}" hx-target="#board" hx-swap="outerHTML"
           method="post" action="{% url 'game:play' game.pk %}" class="space-y-2">
       {% csrf_token %}
       <input type="hidden" name="player" value="{{ round.turn_index }}">
       <div class="grid grid-cols-2 gap-2">
-        <button name="action" value="stay" formnovalidate
-                class="rounded-lg bg-emerald-600 py-3 font-semibold hover:bg-emerald-500">Me quedo</button>
-        <button name="action" value="leave" formnovalidate
-                class="rounded-lg bg-rose-600 py-3 font-semibold hover:bg-rose-500">Me bajo</button>
+        <button name="action" value="stay" formnovalidate class="btn-px bg-px-green text-px-black">Me quedo</button>
+        <button name="action" value="leave" formnovalidate class="btn-px bg-px-red text-px-cream">Me bajo</button>
       </div>
       <div class="flex gap-2">
-        <input type="number" name="bid" min="{{ next_bid }}" inputmode="numeric" placeholder="{{ next_bid }} o más"
-               class="w-full rounded-lg bg-slate-800 px-3 py-2">
-        <button name="action" value="raise"
-                class="rounded-lg bg-amber-500 px-4 font-semibold text-slate-900 hover:bg-amber-400">Subo</button>
+        <input type="number" name="bid" min="{{ next_bid }}" inputmode="numeric" placeholder="{{ next_bid }} o más" class="input-px">
+        <button name="action" value="raise" class="btn-px w-auto bg-px-gold px-4 text-px-black">Subo</button>
       </div>
+    </form>
+
+  {% elif phase == "round_over" %}
+    <p class="text-center text-2xl">
+      Ronda terminada. Capitán: <strong class="text-px-gold">{{ captain_name }}</strong> con
+      <strong class="text-px-gold">{{ round.current_bid }}</strong>.
+    </p>
+    <form hx-post="{% url 'game:reveal' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:reveal' game.pk %}">
+      {% csrf_token %}
+      <button class="btn-px bg-px-orange text-px-black">Revelar la respuesta</button>
     </form>
   {% endif %}
 
-  <ul class="divide-y divide-slate-700 rounded-lg bg-slate-800">
-    {% for player in players %}
-      <li class="flex justify-between px-4 py-3 {% if player.left %}text-slate-500 line-through{% endif %}">
-        <span>{% if player.captain %}⚓ {% endif %}{{ player.name }}</span>
-        <span class="text-slate-300">
-          {% if player.score is not None %}
-            <span class="{% if player.score > 0 %}text-emerald-400{% elif player.score < 0 %}text-rose-400{% endif %}">
-              {% if player.score > 0 %}+{% endif %}{{ player.score }}
-            </span>
-            ·
-          {% endif %}
-          {{ player.coins }} monedas
+  {% if result %}
+    <p class="text-center text-2xl text-px-silver">La respuesta era</p>
+    <p class="text-center font-pixel text-4xl" data-spin="{{ result.answer }}">{{ result.answer }}</p>
+    <div class="box-px animate-pop border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
+      {% if result.success %}{% sprite "anchor" 4 %}{% else %}{% sprite "skull" 4 %}{% endif %}
+      <p class="mt-2 animate-blink font-pixel text-xs leading-relaxed uppercase">
+        {% if result.success %}¡Barco atracado!{% else %}¡Naufragio!{% endif %}
+      </p>
+      {% if result.lone_captain %}<p class="text-xl">(capitán solitario)</p>{% endif %}
+      <p class="text-xl">{{ captain_name }} apostó {{ result.bid }}{% if result.success %} y no se pasó{% else %} y se pasó{% endif %}.</p>
+    </div>
+
+    <ul class="space-y-2">
+      {% for player in players %}
+        <li class="box-px flex justify-between bg-px-black py-1 {% if player.role == 'desertor' %}text-px-stone{% endif %}">
+          <span>{% if player.captain %}⚓ {% endif %}{{ player.name }} · {{ player.role }}</span>
+          <span class="inline-block animate-hop font-pixel text-xs {% if player.score > 0 %}text-px-green{% elif player.score < 0 %}text-px-red{% endif %}"
+                style="animation-delay: {{ forloop.counter0 }}00ms">
+            {% if player.score > 0 %}+{% endif %}{{ player.score }} {% sprite "coin" 2 %}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if phase == "game_over" %}
+    <div class="pt-2 text-center">
+      {% sprite "trophy" 5 %}
+      <p class="mt-2 font-pixel text-base leading-relaxed text-px-gold">
+        {% if winners|length == 1 %}¡Gana {{ winners.0 }}!{% else %}Empate: {{ winners|join:", " }}{% endif %}
+      </p>
+      <p class="mt-1 font-pixel text-[10px] text-px-silver">Fin de la partida</p>
+    </div>
+    <div class="flex h-40 items-end justify-center gap-2">
+      {% for step in podium %}
+        <div class="w-20 text-center">
+          <p>{{ step.name }}</p>
+          <div class="flex animate-grow items-center justify-center border-4 border-px-black font-pixel
+                      {% if step.place == 1 %}bg-px-gold text-px-black{% elif step.place == 2 %}bg-px-silver text-px-black{% else %}bg-px-rust text-px-cream{% endif %}"
+               style="height: {{ step.height }}px">{{ step.place }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    <a href="{% url 'game:home' %}" class="btn-px bg-px-lilac text-px-cream">Nueva partida ▶</a>
+  {% endif %}
+
+  {% if phase == "not_started" or phase == "revealed" %}
+    <form hx-post="{% url 'game:next_round' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+          method="post" action="{% url 'game:next_round' game.pk %}">
+      {% csrf_token %}
+      <button class="btn-px {% if phase == 'not_started' %}bg-px-gold text-px-black{% else %}bg-px-lilac text-px-cream{% endif %}">
+        {% if phase == "not_started" %}Empezar la partida ▶{% else %}Siguiente ronda ▶{% endif %}
+      </button>
+    </form>
+  {% endif %}
+
+  {% if not result %}
+    {# Crew chips: who is captain, whose turn it is and who left the ship. #}
+    <div class="flex flex-wrap justify-center gap-2 pt-2">
+      {% for player in players %}
+        <span class="tag-px {% if player.left %}bg-px-stone text-px-silver line-through{% elif player.turn %}bg-px-cream text-px-black{% elif player.captain %}bg-px-gold text-px-black{% else %}bg-px-sea text-px-black{% endif %}">
+          {% if player.captain %}⚓{% endif %}{{ player.name }}
         </span>
-      </li>
-    {% endfor %}
-  </ul>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <dialog id="scoreboard" class="m-auto w-[90%] max-w-sm bg-transparent p-0 backdrop:bg-px-black/70">
+    <div class="box-px space-y-2 bg-px-night text-px-cream">
+      <p class="text-center font-pixel text-xs uppercase text-px-gold">Marcador</p>
+      {% for player in ranking %}
+        <div class="box-px flex justify-between py-1 {% if forloop.first %}bg-px-gold text-px-black{% else %}bg-px-black{% endif %}">
+          <span>{{ forloop.counter }} · {{ player.name }}</span>
+          <span>{{ player.coins }} {% sprite "coin" 2 %}</span>
+        </div>
+      {% endfor %}
+      <form method="dialog"><button class="btn-px bg-px-lilac text-px-cream">Cerrar</button></form>
+    </div>
+  </dialog>
 </div>

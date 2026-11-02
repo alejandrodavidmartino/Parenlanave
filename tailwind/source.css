@@ -1,1 +1,86 @@
 @import "tailwindcss";
+
+/* Pixel art theme: a retro 8-bit palette and two pixel fonts. */
+@theme {
+  --color-px-black: #000000;
+  --color-px-night: #1d2b53;
+  --color-px-sea: #29adff;
+  --color-px-gold: #ffec27;
+  --color-px-orange: #ffa300;
+  --color-px-green: #00e436;
+  --color-px-red: #ff004d;
+  --color-px-cream: #fff1e8;
+  --color-px-silver: #c2c3c7;
+  --color-px-stone: #5f574f;
+  --color-px-lilac: #83769c;
+  --color-px-pink: #ff77a8;
+  --color-px-rust: #ab5236;
+
+  --font-pixel: "Press Start 2P", monospace;
+  --font-retro: "VT323", monospace;
+
+  /* Animations move in steps (steps()) instead of smoothly, like old consoles.
+     Each one becomes a class: animate-blink, animate-hop, animate-pop, animate-grow. */
+  --animate-blink: px-blink 0.3s steps(1) 4;
+  --animate-hop: px-hop 0.4s steps(2) 2 both;
+  --animate-pop: px-pop 0.4s steps(4) both;
+  --animate-grow: px-grow 0.8s steps(6) both;
+
+  @keyframes px-blink {
+    50% { opacity: 0; }
+  }
+  @keyframes px-hop {
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes px-pop {
+    0% { transform: scale(0.6); }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  @keyframes px-grow {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+}
+
+/* Some people get dizzy with movement and ask their phone to reduce it. */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation: none !important;
+  }
+}
+
+/* Corners cut in steps, like old game windows. */
+@utility notch {
+  clip-path: polygon(
+    0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
+  );
+}
+
+@layer components {
+  /* A chunky console button that sinks 2px when pressed. */
+  .btn-px {
+    @apply notch block w-full border-4 border-b-8 border-px-black px-2 py-3 text-center
+      font-pixel text-[11px] leading-relaxed uppercase;
+  }
+  .btn-px:active {
+    @apply translate-y-0.5 border-b-4;
+  }
+
+  /* A framed box: question card, result, score rows... */
+  .box-px {
+    @apply notch border-4 border-px-black p-3;
+  }
+
+  /* Small label with a black outline: round number, category, player chips. */
+  .tag-px {
+    @apply inline-block border-[3px] border-px-black px-2 py-1 font-pixel text-[9px] uppercase;
+  }
+
+  .input-px {
+    @apply notch w-full border-4 border-px-stone bg-px-black px-3 py-2 text-2xl text-px-cream
+      placeholder-px-stone focus:border-px-gold focus:outline-none;
+  }
+}
