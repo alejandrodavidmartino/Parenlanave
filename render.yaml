@@ -1,0 +1,17 @@
+# Render "Blueprint": describes the web service so Render can create it from the repo.
+# The database lives in Neon; its address goes in DATABASE_URL (set by hand, it's secret).
+services:
+  - type: web
+    name: atraquen-el-barco
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: bash build.sh
+    startCommand: uv run --no-dev gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true # Render creates a random secret key
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        sync: false # Render asks for it when creating the service
