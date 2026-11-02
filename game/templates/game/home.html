@@ -1,6 +1,36 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1 class="text-3xl font-bold">Paren la nave</h1>
-  <p class="mt-2 text-slate-300">Project skeleton up and running.</p>
+  <h1 class="text-3xl font-bold">Atraquen el barco</h1>
+  <p class="mt-2 text-slate-300">Escribid vuestros nombres en el orden en que estáis sentados.</p>
+
+  <form method="post" class="mt-6 space-y-4">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="rounded-lg bg-red-900/60 p-3 text-red-100">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="space-y-2">
+      {% for field in form.player_fields %}
+        {{ field }}
+      {% endfor %}
+    </div>
+
+    <div>
+      <label for="{{ form.total_rounds.id_for_label }}" class="mb-1 block text-sm text-slate-300">
+        {{ form.total_rounds.label }}
+      </label>
+      {{ form.total_rounds }}
+      {% for error in form.total_rounds.errors %}
+        <p class="mt-1 text-sm text-red-300">{{ error }}</p>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="w-full rounded-lg bg-indigo-500 py-3 font-semibold hover:bg-indigo-400">
+      Empezar partida
+    </button>
+  </form>
 {% endblock %}
