@@ -2,9 +2,10 @@
 {% load pixel %}
 
 {% block content %}
-  <header class="text-center">
+  <a href="{% url 'game:title' %}" class="font-pixel text-[10px] uppercase text-px-silver">◀ Volver</a>
+  <header class="mt-4 text-center">
     {% sprite "ship" 6 %}
-    <h1 class="mt-4 font-pixel text-lg leading-relaxed text-px-gold">Atraquen<br>el barco</h1>
+    <h1 class="mt-4 font-pixel text-sm uppercase text-px-gold">Nueva partida</h1>
     <p class="mt-3 text-2xl text-px-silver">Escribid vuestros nombres en el orden en que estáis sentados.</p>
   </header>
 
