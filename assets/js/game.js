@@ -22,3 +22,14 @@ function spinNumbers(root) {
 
 // htmx.onLoad runs on the first page load and again for every piece HTMX swaps in.
 htmx.onLoad(spinNumbers);
+
+// "+ Añadir jugador": show the next hidden name box and remove the button when
+// every box is showing. Without JavaScript the first boxes still work.
+function addPlayer(button) {
+  const next = document.querySelector("[data-player][hidden]");
+  next.hidden = false;
+  next.querySelector("input").focus();
+  if (!document.querySelector("[data-player][hidden]")) {
+    button.remove();
+  }
+}

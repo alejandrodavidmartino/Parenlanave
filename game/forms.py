@@ -33,6 +33,16 @@ class NewGameForm(forms.Form):
         """The name boxes, so the template can show them apart from the rounds box."""
         return [self[name] for name in self.fields if name.startswith("player_")]
 
+    def visible_players(self):
+        """How many name boxes to show: the minimum (R1), or up to the last one filled in,
+        so names typed before an error never get hidden."""
+        filled = [
+            number
+            for number, field in enumerate(self.player_fields(), start=1)
+            if (field.value() or "").strip()
+        ]
+        return max([engine.MIN_PLAYERS, *filled])
+
     def clean(self):
         cleaned_data = super().clean()
         names = [

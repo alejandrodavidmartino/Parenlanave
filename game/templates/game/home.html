@@ -17,11 +17,18 @@
       </div>
     {% endif %}
 
-    <div class="space-y-2">
-      {% for field in form.player_fields %}
-        {{ field }}
-      {% endfor %}
-    </div>
+    {% with visible=form.visible_players %}
+      <div class="space-y-2">
+        {% for field in form.player_fields %}
+          <div data-player {% if forloop.counter > visible %}hidden{% endif %}>{{ field }}</div>
+        {% endfor %}
+      </div>
+      {% if visible < form.player_fields|length %}
+        <button type="button" class="btn-px bg-px-sea text-px-black" onclick="addPlayer(this)">
+          + Añadir jugador
+        </button>
+      {% endif %}
+    {% endwith %}
 
     <div>
       <label for="{{ form.total_rounds.id_for_label }}" class="mb-1 block font-pixel text-[10px] uppercase text-px-silver">
