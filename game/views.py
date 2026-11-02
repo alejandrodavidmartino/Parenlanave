@@ -179,13 +179,20 @@ def _board_context(game, error=None):
 
     if phase == "game_over":
         context["winners"] = [player.name for player in game.winners()]
-        # Podium order on screen: 2nd, 1st, 3rd.
+        # Podium order on screen: 2nd, 1st, 3rd. The end ceremony reveals them the
+        # other way round (3rd, then 2nd, then 1st), so each step says when it appears.
         top = context["ranking"][:3]
         context["podium"] = [
-            {"place": place, "name": top[place - 1]["name"], "height": height}
-            for place, height in ((2, 72), (1, 104), (3, 48))
+            {**top[place - 1], "place": place, "height": height, "appears_at": appears_at}
+            for place, height, appears_at in ((2, 72, 2.6), (1, 104, 3.8), (3, 48, 1.5))
             if place <= len(top)
         ]
+        # Everyone else, in order, one by one after the podium; then the buttons.
+        context["others"] = [
+            {**player, "place": place, "appears_at": round(5 + (place - 4) * 0.3, 1)}
+            for place, player in enumerate(context["ranking"][3:], start=4)
+        ]
+        context["buttons_appear_at"] = round(5.3 + len(context["others"]) * 0.3, 1)
     return context
 
 
