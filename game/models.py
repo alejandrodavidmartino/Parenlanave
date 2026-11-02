@@ -58,6 +58,17 @@ class Game(models.Model):
             )
         return game
 
+    @property
+    def phase(self) -> str:
+        """What the game is waiting for, so the screen knows what to show."""
+        if self.current_round == 0:
+            return "not_started"
+        if self.round_state is None:
+            return "opening"  # waiting for the opener's bid
+        if self.load_round().is_over:
+            return "round_over"
+        return "playing"
+
     def next_round(self, rng: random.Random) -> None:
         """Move on to the next round: a question not asked yet in this game (R6) and a
         random opener (R7). The round itself starts when the opener bids."""
