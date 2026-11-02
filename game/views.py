@@ -10,26 +10,44 @@ from .models import Game
 INVALID_MOVE = "Esa jugada no está permitida."
 
 
-def home(request):
+def title(request):
+    """The title screen: the pirate on the dock and the main menu."""
+    return render(request, "game/title.html")
+
+
+def rules(request):
+    return render(request, "game/rules.html", {"points": _points()})
+
+
+def options(request):
+    """Options are saved in each phone's browser, so the server only shows the page."""
+    return render(request, "game/options.html")
+
+
+def new_game(request):
     """Show the new game form and, when it is sent, create the game."""
     form = NewGameForm(request.POST or None)
     if form.is_valid():
         game = Game.start(form.cleaned_data["names"], form.cleaned_data["total_rounds"])
         return redirect("game:detail", pk=game.pk)
-    return render(request, "game/home.html", {"form": form})
+    return render(request, "game/new_game.html", {"form": form})
 
 
 def game_detail(request, pk):
     game = get_object_or_404(Game, pk=pk)
     context = _board_context(game)
-    # The rules window shows the engine's scoring, so it can never get out of date.
-    context["points"] = {
+    context["points"] = _points()
+    return render(request, "game/game_detail.html", context)
+
+
+def _points():
+    """The engine's scoring for the rules, so they can never get out of date."""
+    return {
         "captain": (engine.CAPTAIN_SUCCESS, engine.CAPTAIN_FAILURE),
         "crew": (engine.CREW_SUCCESS, engine.CREW_FAILURE),
         "deserter": (engine.DESERTER_SUCCESS, engine.DESERTER_FAILURE),
         "lone_captain": (engine.LONE_CAPTAIN_SUCCESS, engine.CAPTAIN_FAILURE),
     }
-    return render(request, "game/game_detail.html", context)
 
 
 @require_POST
