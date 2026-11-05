@@ -64,6 +64,8 @@ class Game(models.Model):
     asked_questions = models.ManyToManyField(Question, blank=True, related_name="+")
     # Position of the player who opens the current round (R7).
     opener = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Whether the current round is a treasure question (R26).
+    treasure = models.BooleanField(default=False)
     # The engine's Round saved as JSON. Empty until the opener makes their bid.
     round_state = models.JSONField(null=True, blank=True)
     # Coins each player won or lost this round, by position. Empty until the answer
@@ -114,8 +116,9 @@ class Game(models.Model):
         return "revealed"
 
     def next_round(self, rng: random.Random) -> None:
-        """Move on to the next round: a question not asked yet in this game (R6) and a
-        random opener (R7). The round itself starts when the opener bids."""
+        """Move on to the next round: a question not asked yet in this game (R6), a
+        random opener (R7) and, now and then, a treasure question (R26). The round
+        itself starts when the opener bids."""
         if self.current_round >= self.total_rounds:
             raise ValueError("The game is over")
         unasked = sorted(
@@ -128,6 +131,7 @@ class Game(models.Model):
             self.current_round += 1
             self.current_question_id = rng.choice(unasked)
             self.opener = engine.choose_opener(self.players.count(), rng)
+            self.treasure = engine.is_treasure_round(rng)
             self.round_state = None
             self.round_scores = None
             self.save()
@@ -143,8 +147,8 @@ class Game(models.Model):
         return engine.finish_round(self.load_round(), self.current_question.answer)
 
     def reveal(self) -> None:
-        """Reveal the answer and give or take each player's coins (R21-R25)."""
-        deltas = engine.score_round(self.result())
+        """Reveal the answer and give or take each player's coins (R21-R25, R27)."""
+        deltas = engine.score_round(self.result(), treasure=self.treasure)
         players = list(self.players.all())
         new_coins = engine.apply_scores([player.coins for player in players], deltas)
         for player, coins in zip(players, new_coins, strict=True):

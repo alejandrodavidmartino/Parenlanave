@@ -38,9 +38,7 @@ def new_game(request):
 
 def game_detail(request, pk):
     game = get_object_or_404(Game, pk=pk)
-    context = _board_context(game)
-    context["points"] = _points()
-    return render(request, "game/game_detail.html", context)
+    return render(request, "game/game_detail.html", _board_context(game))
 
 
 def _points():
@@ -50,6 +48,12 @@ def _points():
         "crew": (engine.CREW_SUCCESS, engine.CREW_FAILURE),
         "deserter": (engine.DESERTER_SUCCESS, engine.DESERTER_FAILURE),
         "lone_captain": (engine.LONE_CAPTAIN_SUCCESS, engine.CAPTAIN_FAILURE),
+        "treasure": (
+            engine.TREASURE_CAPTAIN_SUCCESS,
+            engine.TREASURE_LONE_CAPTAIN_SUCCESS,
+            engine.TREASURE_CAPTAIN_FAILURE,
+        ),
+        "treasure_chance": round(engine.TREASURE_CHANCE * 100),
     }
 
 
@@ -137,6 +141,7 @@ def _board_context(game, error=None):
     round_ = game.load_round() if game.round_state is not None else None
     result = game.result() if game.round_scores is not None else None
     context = {"game": game, "phase": phase, "error": error, "round": round_, "result": result}
+    context["points"] = _points()  # the treasure question warning shows its coins
 
     if game.opener is not None:
         context["opener_name"] = players[game.opener].name

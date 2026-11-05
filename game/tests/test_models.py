@@ -286,3 +286,26 @@ def test_muted_background_is_the_colour_toned_down_with_night_blue():
     ana = game.players.get(name="Ana")
 
     assert ana.muted_background == mix("#ffec27", "#1d2b53", 0.4)
+
+
+@pytest.mark.django_db
+def test_r26_next_round_decides_if_it_is_a_treasure_question(three_questions, monkeypatch):
+    game = Game.start(NAMES)
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 1)
+
+    game.next_round(random.Random(1))
+
+    assert Game.objects.get(pk=game.pk).treasure
+
+
+@pytest.mark.django_db
+def test_r27_reveal_of_a_treasure_question_takes_4_from_the_captain(started_game):
+    started_game.treasure = True
+    started_game.players.update(coins=10)
+    play_round(started_game, 90, "stay", "stay")  # 90 > 88
+
+    started_game.reveal()
+
+    captain, others = coins_by_role(started_game)
+    assert captain == 6
+    assert sorted(others.values()) == [10, 10]

@@ -99,6 +99,14 @@ Al terminar la ronda, cada jugador gana o pierde monedas según el resultado:
 - **R25.** El saldo de monedas de un jugador **nunca baja de 0**: si tiene 0 y pierde
   una, se queda en 0.
 
+## Pregunta del tesoro
+
+- **R26.** Cada ronda tiene un **10 %** de probabilidad de ser una **pregunta del
+  tesoro**. Se anuncia al aparecer la pregunta, antes de la primera apuesta.
+- **R27.** En una pregunta del tesoro, el **capitán se juega más**: si la misión tiene
+  éxito gana **8** (**12** si es solitario) y si fracasa pierde **4**. La tripulación y
+  los desertores puntúan como siempre.
+
 ## Pendiente de definir
 
 - **Órdago**: regla especial de apuesta exacta que congela la ronda. Se añadirá más

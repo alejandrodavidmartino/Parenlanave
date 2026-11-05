@@ -49,3 +49,9 @@
   </tbody>
 </table>
 <p class="text-px-silver">Nadie baja de 0 monedas. Al final gana quien tenga más.</p>
+
+<p>
+  <strong class="text-px-gold">Pregunta del tesoro:</strong> en cada ronda hay un
+  {{ points.treasure_chance }}&nbsp;% de que salga. Solo cambia lo del capitán: gana
+  {{ points.treasure.0 }} ({{ points.treasure.1 }} si va solo) o pierde {{ points.treasure.2|cut:"-" }}.
+</p>
