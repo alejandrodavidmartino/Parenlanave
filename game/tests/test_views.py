@@ -1,6 +1,7 @@
 import pytest
 from django.urls import reverse
 
+from game import engine
 from game.models import Game, Question
 
 HOME = reverse("game:new")
@@ -73,6 +74,13 @@ def test_unknown_game_gives_not_found(client):
 # Playing a round. HTMX requests carry the HX-Request header.
 
 HTMX = {"HTTP_HX_REQUEST": "true"}
+
+
+@pytest.fixture(autouse=True)
+def no_treasure_by_chance(monkeypatch):
+    """The views pick rounds at random: without this, 1 test run in 10 would get a
+    treasure question (R26) and different coins. Treasure tests ask for one on purpose."""
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 0)
 
 
 @pytest.fixture
@@ -683,3 +691,57 @@ def test_trophy_scoreboard_shows_each_players_sailor(client, game):
     scoreboard = content[content.index('id="scoreboard"') :]
     for player in game.players.all():
         assert f'fill="{player.background}"' in scoreboard
+
+
+# Treasure question (R26-R27).
+
+
+@pytest.mark.django_db
+def test_r26_treasure_question_is_announced_with_fireworks(client, game, monkeypatch):
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 1)  # every round is a treasure
+
+    response = client.post(url("next_round", game), **HTMX)
+
+    content = response.content.decode()
+    assert "¡Pregunta del tesoro!" in content
+    assert "gana 8 monedas (12 si va solo)" in content and "o pierde 4" in content
+    assert "data-fireworks" in content
+
+
+@pytest.mark.django_db
+def test_r26_fireworks_only_when_the_treasure_question_appears(client, game, monkeypatch):
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 1)
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    content = response.content.decode()
+    assert "¡Pregunta del tesoro!" in content  # the warning stays all round...
+    assert "data-fireworks" not in content  # ...but the fireworks went off only once
+
+
+@pytest.mark.django_db
+def test_ordinary_question_has_no_treasure_warning(client, game):
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "¡Pregunta del tesoro!" not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_r27_treasure_question_gives_the_captain_8(client, game, monkeypatch):
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 1)
+    finish_round(client, game)  # 50 <= 88
+
+    client.post(url("reveal", game), **HTMX)
+
+    assert sorted(player.coins for player in game.players.all()) == [2, 2, 8]
+
+
+@pytest.mark.django_db
+def test_rules_explain_the_treasure_question(client, monkeypatch):
+    monkeypatch.setattr(engine, "TREASURE_CHANCE", 0.1)  # the real one, not the tests' 0
+
+    content = client.get(reverse("game:rules")).content.decode()
+
+    assert "Pregunta del tesoro:" in content
+    assert "10&nbsp;%" in content

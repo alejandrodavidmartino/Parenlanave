@@ -20,7 +20,7 @@
         <p class="text-2xl">{% sprite "anchor" 2 %} Capitán: {{ captain_name }} con <strong class="font-pixel text-px-gold">{{ round.current_bid }}</strong></p>
       {% endif %}
       <button type="button" class="btn-px mt-2 max-w-xs bg-px-night text-px-gold"
-              onclick="this.closest('[data-handoff]').remove()">
+              onclick="closeHandoff(this)">
         Soy {{ handoff.name }} ▶
       </button>
     </div>
@@ -41,11 +41,41 @@
   {% endif %}
 
   {% if phase != "not_started" %}
-    <div class="box-px border-b-8 bg-px-cream text-px-night">
-      {% if game.current_question.category %}
-        <span class="tag-px border-2 bg-px-pink text-px-black">{{ game.current_question.category }}</span>
-      {% endif %}
-      <p class="mt-2 text-2xl">{{ game.current_question.text }}</p>
+    {% if game.treasure %}
+      {# Treasure question (R26-R27): a warning with what's at stake for the captain. #}
+      <div class="box-px border-b-8 bg-px-gold text-center text-px-black">
+        <p class="font-pixel text-[10px] uppercase">{% sprite "chest" 2 %} ¡Pregunta del tesoro!</p>
+        <p class="mt-1 text-xl leading-tight">
+          Solo para el capitán: gana {{ points.treasure.0 }} monedas ({{ points.treasure.1 }} si va solo)
+          o pierde {{ points.treasure.2|cut:"-" }}.
+        </p>
+      </div>
+    {% endif %}
+    {# The question sign, held by a pirate peeking from behind it, in a little framed #}
+    {# picture: the harbour at night in a wooden frame with gold nails, or for a #}
+    {# treasure question a cave full of chests in a gold frame with rubies. Fireworks #}
+    {# go off when the treasure question appears (data-fireworks, see game.js). #}
+    <div class="relative border-4 border-px-black p-1.5 {% if game.treasure %}bg-px-gold{% else %}bg-px-rust{% endif %}"
+         {% if game.treasure and phase == "opening" %}data-fireworks{% endif %}>
+      <span class="absolute top-0.5 left-0.5 size-1 {% if game.treasure %}bg-px-red{% else %}bg-px-gold{% endif %}"></span>
+      <span class="absolute top-0.5 right-0.5 size-1 {% if game.treasure %}bg-px-red{% else %}bg-px-gold{% endif %}"></span>
+      <span class="absolute bottom-0.5 left-0.5 size-1 {% if game.treasure %}bg-px-red{% else %}bg-px-gold{% endif %}"></span>
+      <span class="absolute right-0.5 bottom-0.5 size-1 {% if game.treasure %}bg-px-red{% else %}bg-px-gold{% endif %}"></span>
+      <div class="overflow-hidden border-4 border-px-black {% if game.treasure %}bg-px-cave{% else %}bg-px-deep{% endif %}">
+        {% if game.treasure %}{% treasure_cave_top %}{% else %}{% harbour_sky %}{% endif %}
+        <div class="relative mx-3">
+          {# His hands (the bottom 8px of the picture) go over the top edge of the sign. #}
+          <div class="absolute bottom-full left-1/2 z-10 flex -translate-x-1/2 translate-y-2">{% sprite "peek_pirate" 4 %}</div>
+          <div class="box-px border-b-8 bg-px-cream text-px-night">
+            {% if game.current_question.category %}
+              <span class="tag-px border-2 bg-px-pink text-px-black">{{ game.current_question.category }}</span>
+            {% endif %}
+            <p class="mt-2 text-2xl">{{ game.current_question.text }}</p>
+          </div>
+          <div class="absolute top-full left-1/2 flex -translate-x-1/2">{% sprite "peek_legs" 4 %}</div>
+        </div>
+        {% if game.treasure %}{% treasure_cave_floor %}{% else %}{% harbour_dock %}{% endif %}
+      </div>
     </div>
   {% endif %}
 

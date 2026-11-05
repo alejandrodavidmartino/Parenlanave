@@ -203,7 +203,36 @@ SPRITES = {
         ".KKKKKKKKKKKK.",
         "..KKKKKKKKKK..",
     ],
+    # The pirate hiding behind the question sign: only his feet stick out below it,
+    # his boot and his peg leg.
+    "peek_legs": [
+        "..DDD...R...",
+        "..DDD...R...",
+        "..KKK...R...",
+        ".KKKK...R...",
+    ],
 }
+
+# ...and above the sign, his head and the two hands holding its top edge (the last two
+# rows). His parrot sits on the edge next to him. Seven empty columns on the left keep
+# the pirate in the middle of the picture, so it can be centred over the sign.
+_PEEKING_PIRATE = [
+    ".....KKKKKK.....",
+    "....KKKKKKKK....",
+    "....KKKWWKKK....",
+    "..KKKKKKKKKKKK..",
+    ".....SSSSSS.....",
+    ".....SSKSKKS....",
+    ".....SSSSSS.....",
+    ".....RRRRRR.....",
+    ".SS...RRRR...SS.",
+    ".SS..........SS.",
+]
+_PARROT_TOP = len(_PEEKING_PIRATE) - len(SPRITES["parrot"])
+SPRITES["peek_pirate"] = [
+    "." * 7 + row + "." + (SPRITES["parrot"][y - _PARROT_TOP] if y >= _PARROT_TOP else "......")
+    for y, row in enumerate(_PEEKING_PIRATE)
+]
 
 SCENE_COLOURS = {
     "night": "#1d2b53",
@@ -459,6 +488,138 @@ def voyage_scene(result, players):
     return mark_safe(
         f'<svg viewBox="0 0 {width} {height}" shape-rendering="crispEdges" '
         f'class="block h-auto w-full overflow-hidden" role="img" aria-label="{label}">'
+        f"{''.join(parts)}</svg>"
+    )
+
+
+@register.simple_tag
+def harbour_sky():
+    """The top of the question picture: night sky, moon, a ship far away and the sea.
+
+    It is 120 x 24 pixels and always 4 screen pixels per pixel, like the pirate in front
+    of it: on a narrow phone the sides are cut off instead of shrinking it ("slice").
+    """
+    c = NIGHT_COLOURS
+    width, height, horizon = 120, 24, 17
+    parts = [_rect(0, 0, width, horizon, c["sky"]), _rect(0, 0, width, 7, c["sky_top"])]
+    parts.extend(_rect(x, 7, 1, 1, c["sky_top"]) for x in range(1, width, 2))
+    for x, y in ((14, 3), (31, 9), (47, 2), (58, 6), (76, 11), (101, 3), (110, 10)):
+        parts.append(_rect(x, y, 1, 1, c["moon"]))
+
+    moon_x, moon_y, radius = 92, 7, 3
+    for dy in range(-radius, radius + 1):
+        half = round((radius**2 - dy**2) ** 0.5)
+        parts.append(_rect(moon_x - half, moon_y + dy, half * 2 + 1, 1, c["moon"]))
+    parts.append(_rect(moon_x + 1, moon_y - 1, 1, 1, c["crater"]))
+
+    # The sea stays still so it doesn't distract from the question; only the ship far
+    # away rocks on the waves now and then.
+    parts.append(_rect(0, horizon, width, height - horizon, c["sea"]))
+    parts.append('<g class="animate-now-and-then">')
+    parts.extend(_rects(SPRITES["ship_far"], dx=20, dy=horizon - 8))
+    parts.append("</g>")
+    for y, half in ((18, 3), (20, 2), (22, 3)):  # the moon's reflection
+        parts.append(_rect(moon_x - half, y, half * 2, 1, c["moon"]))
+    for y, offset in ((19, 3), (22, 8)):
+        parts.extend(_rect(x, y, 3, 1, c["wave"]) for x in range(offset, width - 2, 13))
+    return _strip(width, height, "xMidYMax", "h-24", parts)
+
+
+@register.simple_tag
+def harbour_dock():
+    """The bottom of the question picture: a little sea and the dock the pirate stands on.
+
+    120 x 8 pixels; the pirate's feet (4 pixels tall) reach down to the boards.
+    """
+    c = NIGHT_COLOURS
+    width, height, boards = 120, 8, 4
+    parts = [_rect(0, 0, width, boards, c["sea"])]
+    parts.extend(_rect(x, 1, 3, 1, c["wave"]) for x in range(5, width - 2, 11))
+    parts.append(_rect(0, boards, width, 1, c["black"]))
+    parts.append(_rect(0, boards + 1, width, height - boards - 1, c["wood"]))
+    parts.extend(
+        _rect(x, boards + 1, 1, height - boards - 1, c["black"]) for x in range(6, width, 10)
+    )
+    return _strip(width, height, "xMidYMin", "h-8", parts)
+
+
+# Colours of the treasure cave: dark rock lit by torches, and gold everywhere.
+CAVE_COLOURS = {
+    "dark": "#1d1426",
+    "rock": "#5f574f",
+    "shadow": "#3a2f3f",
+    "gold": "#ffec27",
+    "coin": "#ffa300",
+    "flame": "#ff004d",
+    "sparkle": "#fff1e8",
+    "black": "#000000",
+}
+
+
+@register.simple_tag
+def treasure_cave_top():
+    """The top of the treasure question picture: a cave full of chests and gold.
+
+    Same size and rules as harbour_sky (120 x 24, cut at the sides on narrow phones).
+    """
+    c = CAVE_COLOURS
+    width, height = 120, 24
+    parts = [_rect(0, 0, width, height, c["dark"]), _rect(0, 0, width, 3, c["rock"])]
+    # Stalactites hanging from the ceiling, of different lengths.
+    for index, x in enumerate(range(3, width, 9)):
+        length = 2 + index % 3
+        parts.append(_rect(x, 3, 3, length, c["rock"]))
+        parts.append(_rect(x + 1, 3 + length, 1, 1, c["rock"]))
+    # Two torches on the walls. The flames (and the glints on the gold, below) flicker
+    # for 3 seconds when the treasure question appears, then stay lit.
+    for x in (34, 84):
+        parts.append(_rect(x, 9, 2, 5, c["shadow"]))
+        parts.append('<g class="flicker">')
+        parts.append(_rect(x - 1, 6, 4, 3, c["coin"]))
+        parts.append(_rect(x, 5, 2, 2, c["gold"]))
+        parts.append("</g>")
+        parts.append(_rect(x, 8, 2, 1, c["flame"]))
+    # A big heap of gold in the middle, behind the pirate.
+    centre, base, half = width // 2, height, 34
+    for row in range(8):
+        row_half = half - row * 4
+        colour = c["coin"] if row % 3 == 1 else c["gold"]
+        parts.append(_rect(centre - row_half, base - 1 - row, row_half * 2, 1, colour))
+    # Lots of chests piled up on both sides of the pirate: a back row and a front row.
+    # A phone only shows about x = 21 to 99, so most of them are inside that; the rest
+    # appear on wider screens.
+    chest = SPRITES["chest"]
+    for x in (22, 31, 81, 90):
+        parts.extend(_rects(chest, dx=x, dy=12))
+    for x in (2, 11, 20, 29, 38, 74, 83, 92, 101, 110):
+        parts.extend(_rects(chest, dx=x, dy=18))
+    # Glints of light on the gold and the chests.
+    parts.append('<g class="flicker">')
+    for x, y in ((9, 12), (27, 17), (44, 19), (58, 17), (75, 18), (97, 12), (115, 17)):
+        parts.append(_rect(x, y, 1, 1, c["sparkle"]))
+    parts.append("</g>")
+    return _strip(width, height, "xMidYMax", "h-24", parts)
+
+
+@register.simple_tag
+def treasure_cave_floor():
+    """The bottom of the treasure question picture: a floor covered in gold coins."""
+    c = CAVE_COLOURS
+    width, height = 120, 8
+    parts = [_rect(0, 0, width, height, c["dark"])]
+    parts.append(_rect(0, 3, width, height - 3, c["gold"]))
+    parts.extend(_rect(x, 3 + x % 2, 3, 1, c["coin"]) for x in range(1, width, 5))
+    parts.extend(_rect(x, 6, 2, 1, c["coin"]) for x in range(3, width, 7))
+    for x, colour in ((10, "flame"), (31, "sparkle"), (95, "flame"), (108, "sparkle")):
+        parts.append(_rect(x, 1, 2, 2, c[colour]))  # rubies and diamonds lying around
+    return _strip(width, height, "xMidYMin", "h-8", parts)
+
+
+def _strip(width, height, align, height_class, parts):
+    """A decorative band as wide as its box, cut at the sides rather than squashed."""
+    return mark_safe(
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="{align} slice" '
+        f'shape-rendering="crispEdges" class="block w-full {height_class}" aria-hidden="true">'
         f"{''.join(parts)}</svg>"
     )
 

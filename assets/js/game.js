@@ -225,3 +225,61 @@ function throwConfetti(container) {
 }
 
 htmx.onLoad(playReveal);
+
+// "Pass the phone" curtain: tapping the button hides it. If behind it there's a new
+// treasure question, it is celebrated with fireworks the moment it's seen.
+function closeHandoff(button) {
+  button.closest("[data-handoff]").remove();
+  celebrateTreasure(document);
+}
+
+function celebrateTreasure(root) {
+  const picture = root.querySelector("[data-fireworks]");
+  if (!picture || document.querySelector("[data-handoff]")) {
+    return; // no treasure question, or it's still hidden behind the curtain
+  }
+  picture.classList.add("celebrating"); // torches and gold flicker for 3 seconds
+  Sound.fireworks();
+  if (animationsOn()) {
+    launchFireworks();
+  }
+}
+
+htmx.onLoad(celebrateTreasure);
+
+// About a second of pixel fireworks: a few bursts of coloured squares flying out from
+// random points in the top half of the screen, at the same times as their bangs.
+const FIREWORK_TIMES = [0, 250, 500, 700]; // ms, the same as Sound.fireworks()
+
+function launchFireworks() {
+  const sky = document.createElement("div");
+  sky.className = "pointer-events-none fixed inset-0 z-50 overflow-hidden";
+  document.body.append(sky);
+  FIREWORK_TIMES.forEach((time, burst) => {
+    setTimeout(() => {
+      const x = 15 + Math.random() * 70; // % of the screen width
+      const y = 10 + Math.random() * 35; // % of the screen height
+      const colour = CONFETTI_COLOURS[burst % CONFETTI_COLOURS.length];
+      for (let i = 0; i < 14; i += 1) {
+        const spark = document.createElement("span");
+        spark.className = "absolute size-2";
+        spark.style.left = `${x}%`;
+        spark.style.top = `${y}%`;
+        spark.style.background = i % 4 === 0 ? "#fff1e8" : colour;
+        const angle = (i / 14) * 2 * Math.PI;
+        const distance = 50 + Math.random() * 30;
+        const dx = Math.round(Math.cos(angle) * distance);
+        const dy = Math.round(Math.sin(angle) * distance);
+        spark.animate(
+          [
+            { transform: "translate(0, 0)", opacity: 1 },
+            { transform: `translate(${dx}px, ${dy + 20}px)`, opacity: 0 }, // falls a bit
+          ],
+          { duration: 700, easing: "steps(7)", fill: "forwards" },
+        );
+        sky.append(spark);
+      }
+    }, time);
+  });
+  setTimeout(() => sky.remove(), 1600);
+}

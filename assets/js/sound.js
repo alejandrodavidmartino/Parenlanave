@@ -230,6 +230,24 @@ const Sound = (() => {
     }
   }
 
+  // Treasure question: four rockets, each a rising whistle and then a bang that
+  // crackles, at the same times as the bursts on screen (FIREWORK_TIMES in game.js).
+  function fireworks() {
+    if (!audio() || !enabled("sfx")) {
+      return;
+    }
+    const now = context.currentTime;
+    [0, 0.25, 0.5, 0.7].forEach((at, rocket) => {
+      const launch = now + at - 0.15; // the whistle starts just before the burst
+      tone(700 + rocket * 120, Math.max(now, launch), 0.15, { type: "sine", volume: 0.12, slideTo: 1800 });
+      noise(now + at, 0.35, { volume: 0.5, from: 3000, to: 200 });
+      for (let crackle = 0; crackle < 5; crackle += 1) {
+        const pop = now + at + 0.08 + crackle * 0.06 + Math.random() * 0.03;
+        noise(pop, 0.04, { volume: 0.25, from: 8000, to: 4000, filter: "highpass" });
+      }
+    });
+  }
+
   // Every tap: wake the audio up, start the title music once, and blip on buttons.
   let titleStarted = false;
   document.addEventListener(
@@ -249,5 +267,5 @@ const Sound = (() => {
     true,
   );
 
-  return { suspense, stopMusic, explosion, celebration, ding, drumroll, victory };
+  return { suspense, stopMusic, explosion, celebration, ding, drumroll, victory, fireworks };
 })();

@@ -34,6 +34,8 @@
   --color-px-lilac: #83769c;
   --color-px-pink: #ff77a8;
   --color-px-rust: #ab5236;
+  --color-px-deep: #0f2f55; /* the sea at night, behind the question sign */
+  --color-px-cave: #1d1426; /* the treasure cave, behind a treasure question */
 
   --font-pixel: "Press Start 2P", monospace;
   --font-retro: "VT323", monospace;
@@ -52,6 +54,8 @@
   /* Lone captain: the treasure sparkles, or the deserters jump for joy. */
   --animate-twinkle: px-blink 0.6s steps(1) infinite;
   --animate-cheer: px-cheer 0.4s steps(2) 1.5s 6 both;
+  /* Question picture: the ship far away rocks on the waves for a moment every 6s. */
+  --animate-now-and-then: px-now-and-then 6s steps(1) infinite;
   /* The ship rocks at the dock while the answer is being counted. */
   --animate-rock: px-rock 1.2s steps(2) infinite;
   /* Reveal scene at night: the waves drift sideways, back and forth. */
@@ -99,6 +103,12 @@
   @keyframes px-waves {
     50% { transform: translateX(2px); }
   }
+  @keyframes px-now-and-then {
+    80% { transform: translateY(1px); }
+    86% { transform: translateY(0); }
+    92% { transform: translateY(1px); }
+    98% { transform: translateY(0); }
+  }
   @keyframes px-rock {
     50% { transform: translateY(1px); }
   }
@@ -123,6 +133,16 @@
    it, so nothing peeks out at the edges of the screen. */
 .overlay-open #board > :not([data-reveal], [data-ceremony]) {
   visibility: hidden;
+}
+
+/* Treasure cave: the torches and the glints on the gold flicker 5 times (3 seconds)
+   when the question is first seen, with the fireworks (game.js adds "celebrating"),
+   then stay lit. Not on every move, when HTMX draws the board again. */
+.celebrating .flicker {
+  animation: px-flicker 0.6s steps(1) 5;
+}
+@keyframes px-flicker {
+  50% { opacity: 0; }
 }
 
 /* SVG groups turn around their own centre, not the corner of the picture. */

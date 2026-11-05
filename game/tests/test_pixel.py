@@ -4,7 +4,16 @@ import pytest
 from django.template import Context, Template
 
 from game.engine import RoundResult
-from game.templatetags.pixel import SPRITES, sprite, title_scene, voyage_scene
+from game.templatetags.pixel import (
+    SPRITES,
+    harbour_dock,
+    harbour_sky,
+    sprite,
+    title_scene,
+    treasure_cave_floor,
+    treasure_cave_top,
+    voyage_scene,
+)
 
 
 def render(text):
@@ -148,3 +157,34 @@ def test_ship_rocks_while_waiting_for_the_answer():
     svg = voyage_scene(result, players("#ff004d", "#29adff", "#00e436"))
 
     assert '<g class="animate-rock"><g class="animate-sail-away sail-away">' in svg
+
+
+@pytest.mark.parametrize(
+    ("tag", "width", "height"), [(harbour_sky, 120, 24), (harbour_dock, 120, 8)]
+)
+def test_question_picture_strips_draw_inside_their_canvas(tag, width, height):
+    svg = tag()
+
+    assert f'viewBox="0 0 {width} {height}"' in svg
+    assert "slice" in svg  # cut at the sides on narrow phones, never squashed
+    for x, y, w, h in re.findall(r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"', svg):
+        assert int(x) + int(w) <= width
+        assert int(y) + int(h) <= height
+
+
+def test_peeking_pirate_is_centred_and_holds_the_sign_with_both_hands():
+    rows = SPRITES["peek_pirate"]
+
+    hat = [x for x, pixel in enumerate(rows[0]) if pixel != "."]
+    assert (hat[0] + hat[-1] + 1) / 2 == len(rows[0]) / 2  # centred, parrot aside
+    assert rows[-1].count("SS") == 2  # two hands on the edge
+
+
+@pytest.mark.parametrize(("tag", "height"), [(treasure_cave_top, 24), (treasure_cave_floor, 8)])
+def test_treasure_cave_strips_draw_inside_their_canvas(tag, height):
+    svg = tag()
+
+    assert f'viewBox="0 0 120 {height}"' in svg
+    for x, y, w, h in re.findall(r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"', svg):
+        assert int(x) + int(w) <= 120
+        assert int(y) + int(h) <= height

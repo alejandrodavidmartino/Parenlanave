@@ -12,6 +12,7 @@ from game.engine import (
     check_player_count,
     choose_opener,
     finish_round,
+    is_treasure_round,
     leave,
     raise_bid,
     round_from_dict,
@@ -382,3 +383,38 @@ def test_round_dict_only_has_plain_values():
     data = round_to_dict(round_)
 
     assert data["players"][LUIS] == {"name": "Luis", "status": "left"}
+
+
+# Treasure question (R26-R27): only the captain's coins change.
+
+
+def test_r26_about_one_round_in_ten_is_a_treasure_question():
+    rng = random.Random(7)
+
+    treasures = sum(is_treasure_round(rng) for _ in range(10_000))
+
+    assert 900 < treasures < 1100
+
+
+def test_r27_treasure_success_gives_the_captain_8():
+    result = RoundResult(captain=LUIS, crew=[ANA], deserters=[MARTA], bid=150, answer=200)
+
+    assert score_round(result, treasure=True) == {LUIS: 8, ANA: 2, MARTA: 0}
+
+
+def test_r27_treasure_failure_takes_4_from_the_captain():
+    result = RoundResult(captain=LUIS, crew=[ANA], deserters=[MARTA], bid=150, answer=100)
+
+    assert score_round(result, treasure=True) == {LUIS: -4, ANA: 0, MARTA: 2}
+
+
+def test_r27_treasure_lone_captain_success_gives_12():
+    result = RoundResult(captain=LUIS, crew=[], deserters=[ANA, MARTA], bid=150, answer=200)
+
+    assert score_round(result, treasure=True) == {LUIS: 12, ANA: 0, MARTA: 0}
+
+
+def test_r27_treasure_lone_captain_failure_takes_4():
+    result = RoundResult(captain=LUIS, crew=[], deserters=[ANA, MARTA], bid=150, answer=100)
+
+    assert score_round(result, treasure=True) == {LUIS: -4, ANA: 2, MARTA: 2}

@@ -24,6 +24,13 @@ CAPTAIN_FAILURE = -1
 CREW_FAILURE = 0
 DESERTER_FAILURE = 2
 
+# Treasure question (R26-R27): how often it comes up, and the captain's coins in it.
+# The crew and the deserters score as usual.
+TREASURE_CHANCE = 0.1
+TREASURE_CAPTAIN_SUCCESS = 8
+TREASURE_LONE_CAPTAIN_SUCCESS = 12
+TREASURE_CAPTAIN_FAILURE = -4
+
 
 class InvalidMoveError(Exception):
     """Raised when a move breaks the rules. The round is left unchanged (R17)."""
@@ -117,6 +124,11 @@ def choose_opener(player_count: int, rng: random.Random) -> int:
     return rng.randrange(player_count)
 
 
+def is_treasure_round(rng: random.Random) -> bool:
+    """Decide at random whether this round is a treasure question (R26)."""
+    return rng.random() < TREASURE_CHANCE
+
+
 def start_round(names: list[str], opener: int, opening_bid: int) -> Round:
     """Start a round where `opener` makes the opening bid and becomes captain (R8).
 
@@ -182,17 +194,23 @@ def finish_round(round_: Round, answer: int) -> RoundResult:
     )
 
 
-def score_round(result: RoundResult) -> dict[int, int]:
+def score_round(result: RoundResult, treasure: bool = False) -> dict[int, int]:
     """Coins each player wins or loses this round, by position (R21-R24).
 
-    A lone captain who fails scores like any failed mission (R24).
+    A lone captain who fails scores like any failed mission (R24). In a treasure
+    question the captain wins or loses more; everyone else scores as usual (R27).
     """
     if result.success:
-        captain = LONE_CAPTAIN_SUCCESS if result.lone_captain else CAPTAIN_SUCCESS
+        if treasure:
+            captain = (
+                TREASURE_LONE_CAPTAIN_SUCCESS if result.lone_captain else TREASURE_CAPTAIN_SUCCESS
+            )
+        else:
+            captain = LONE_CAPTAIN_SUCCESS if result.lone_captain else CAPTAIN_SUCCESS
         crew = CREW_SUCCESS
         deserter = DESERTER_SUCCESS
     else:
-        captain = CAPTAIN_FAILURE
+        captain = TREASURE_CAPTAIN_FAILURE if treasure else CAPTAIN_FAILURE
         crew = CREW_FAILURE
         deserter = DESERTER_FAILURE
 
