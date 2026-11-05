@@ -745,3 +745,11 @@ def test_rules_explain_the_treasure_question(client, monkeypatch):
 
     assert "Pregunta del tesoro:" in content
     assert "10&nbsp;%" in content
+
+
+@pytest.mark.django_db
+def test_pass_the_phone_curtain_closes_without_needing_game_js(client, game):
+    # A phone with an old copy of game.js saved must still be able to play.
+    response = client.post(url("next_round", game), **HTMX)
+
+    assert "this.closest('[data-handoff]').remove();" in response.content.decode()

@@ -226,13 +226,8 @@ function throwConfetti(container) {
 
 htmx.onLoad(playReveal);
 
-// "Pass the phone" curtain: tapping the button hides it. If behind it there's a new
-// treasure question, it is celebrated with fireworks the moment it's seen.
-function closeHandoff(button) {
-  button.closest("[data-handoff]").remove();
-  celebrateTreasure(document);
-}
-
+// A new treasure question is celebrated with fireworks the moment it's seen: when the
+// board loads, or when the "pass the phone" curtain in front of it is closed.
 function celebrateTreasure(root) {
   const picture = root.querySelector("[data-fireworks]");
   if (!picture || document.querySelector("[data-handoff]")) {

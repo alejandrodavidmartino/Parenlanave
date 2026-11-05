@@ -6,7 +6,9 @@
   {% if dramatic_reveal and phase == "game_over" %}{% include "game/_ceremony.html" %}{% endif %}
 
   {% if handoff %}
-    {# Full screen "pass the phone" curtain in the player's colour. Tapping the button just hides it. #}
+    {# Full screen "pass the phone" curtain in the player's colour. Tapping the button hides #}
+    {# it, here in the page itself so it always works, even if the phone still has an old #}
+    {# copy of game.js; then a treasure question, if any, gets its fireworks. #}
     <div data-handoff class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 p-6 text-center text-px-cream"
          style="background: {{ handoff.muted_background }}">
       {% sprite "phone" 5 %}
@@ -20,7 +22,7 @@
         <p class="text-2xl">{% sprite "anchor" 2 %} Capitán: {{ captain_name }} con <strong class="font-pixel text-px-gold">{{ round.current_bid }}</strong></p>
       {% endif %}
       <button type="button" class="btn-px mt-2 max-w-xs bg-px-night text-px-gold"
-              onclick="closeHandoff(this)">
+              onclick="this.closest('[data-handoff]').remove(); window.celebrateTreasure?.(document)">
         Soy {{ handoff.name }} ▶
       </button>
     </div>
