@@ -753,3 +753,15 @@ def test_pass_the_phone_curtain_closes_without_needing_game_js(client, game):
     response = client.post(url("next_round", game), **HTMX)
 
     assert "this.closest('[data-handoff]').remove();" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_revealed_round_is_a_short_summary_without_pictures(client, game):
+    finish_round(client, game)
+    client.post(url("reveal", game), **HTMX)
+
+    content = client.get(url("detail", game)).content.decode()  # no full screen scene
+
+    assert "How many keys does a piano have?" in content and "La respuesta era" in content
+    assert "El barco zarpa de noche" not in content  # the ship scene was shown already
+    assert 'preserveAspectRatio="xMidYMax slice"' not in content  # nor the question picture
