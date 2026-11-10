@@ -42,7 +42,9 @@
     <p class="box-px bg-px-red text-px-cream">{{ error }}</p>
   {% endif %}
 
-  {% if phase != "not_started" %}
+  {# Before the answer is revealed: the big question picture. Afterwards the round's #}
+  {# summary below takes its place, so everything fits on one screen. #}
+  {% if phase != "not_started" and not result %}
     {% if game.treasure %}
       {# Treasure question (R26-R27): a warning with what's at stake for the captain. #}
       <div class="box-px border-b-8 bg-px-gold text-center text-px-black">
@@ -130,11 +132,18 @@
   {% endif %}
 
   {% if result %}
-    <p class="text-center text-2xl text-px-silver">La respuesta era</p>
-    <p class="text-center font-pixel text-4xl" data-spin="{{ result.answer }}">{{ result.answer }}</p>
-    {# The ship sails away with the crew, or blows up and sinks. Deserters stay on the dock. #}
-    <div class="box-px p-0">{% voyage_scene result players %}</div>
-    {% include "game/_voyage_legend.html" %}
+    {# A short summary of the round. The ship sailing away or sinking was already shown #}
+    {# full screen, so it isn't repeated here. #}
+    <div class="box-px border-b-8 bg-px-cream text-px-night">
+      {% if game.treasure %}
+        <span class="tag-px border-2 bg-px-gold text-px-black">{% sprite "chest" 2 %} Tesoro</span>
+      {% endif %}
+      <p class="text-lg leading-tight text-px-stone">{{ game.current_question.text }}</p>
+      <p class="mt-1 flex items-baseline justify-between text-xl">
+        La respuesta era
+        <span class="font-pixel text-2xl" data-spin="{{ result.answer }}">{{ result.answer }}</span>
+      </p>
+    </div>
     <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
       <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
         {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}
