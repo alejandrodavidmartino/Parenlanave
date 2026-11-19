@@ -13,3 +13,9 @@ uv run --no-dev python manage.py tailwind build            # compile the CSS
 uv run --no-dev python manage.py collectstatic --no-input  # gather static files
 uv run --no-dev python manage.py migrate --no-input        # update the database
 uv run --no-dev python manage.py load_questions            # add any new questions
+
+# The free plan has no shell to run `createsuperuser`, so the admin user is created from
+# the DJANGO_SUPERUSER_* environment variables (only if they are set, and only once).
+if [ -n "${DJANGO_SUPERUSER_USERNAME:-}" ]; then
+  uv run --no-dev python manage.py ensure_superuser
+fi
