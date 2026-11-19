@@ -1,5 +1,10 @@
 # ⚓ Atraquen el barco
 
+[![CI](https://github.com/alejandrodavidmartino/Parenlanave/actions/workflows/ci.yml/badge.svg)](https://github.com/alejandrodavidmartino/Parenlanave/actions/workflows/ci.yml)
+
+**▶ [Jugar ahora](https://atraquen-el-barco.onrender.com)** · el servidor gratuito se
+duerme tras un rato sin visitas: la primera carga puede tardar unos 30 segundos.
+
 Juego de fiesta por turnos para jugar con amigos desde un solo móvil. Aparece una pregunta
 con respuesta numérica y los jugadores van subiendo la apuesta: gana monedas quien se
 acerca a la respuesta **sin pasarse**… o quien abandona el barco a tiempo.
@@ -41,6 +46,7 @@ Las reglas completas, numeradas de la R1 a la R25, están en [RULES.md](RULES.md
 | Base de datos | SQLite en local, PostgreSQL en producción (django-environ) |
 | Calidad | pytest, pytest-django, pytest-cov, Ruff, pre-commit |
 | Entorno | uv |
+| Despliegue | Render (gunicorn + WhiteNoise), PostgreSQL en Neon, CI con GitHub Actions |
 
 ## Arquitectura
 
@@ -71,7 +77,7 @@ Gracias a esta separación, el mismo motor se podrá reutilizar en una versión 
 Necesitas [uv](https://docs.astral.sh/uv/) instalado.
 
 ```bash
-git clone https://github.com/alejandrotfg12/Parenlanave.git
+git clone https://github.com/alejandrodavidmartino/Parenlanave.git
 cd Parenlanave
 uv sync
 ```
@@ -105,13 +111,26 @@ uv run python manage.py tailwind runserver
 uv run pytest --cov
 ```
 
-- 105 tests, con un 100 % de cobertura en la app `game`.
+- Más de 170 tests, con un 100 % de cobertura en la app `game`.
 - Ruff para el lint y el formato, ejecutado automáticamente antes de cada commit con
   pre-commit:
 
 ```bash
 uv run pre-commit install
 ```
+
+- **Integración continua**: en cada pull request, GitHub Actions ejecuta Ruff, los checks
+  de seguridad de Django (`check --deploy`), comprueba que no falten migraciones y pasa
+  los tests exigiendo el 100 % de cobertura.
+
+## Despliegue
+
+El juego está desplegado en [Render](https://render.com) (plan gratuito) con la base de
+datos PostgreSQL en [Neon](https://neon.tech). Render crea el servicio a partir de
+[`render.yaml`](render.yaml) y en cada push a `main` ejecuta [`build.sh`](build.sh):
+compila el CSS, recoge los estáticos, aplica las migraciones, carga las preguntas nuevas y
+crea el usuario admin si no existe (comando `ensure_superuser`, con las variables
+`DJANGO_SUPERUSER_*`).
 
 ## Estructura
 
@@ -124,7 +143,7 @@ game/
 ├── forms.py             Formulario de nueva partida
 ├── templates/game/      Plantillas (_board.html es el tablero que cambia HTMX)
 ├── data/questions.json  Banco de preguntas
-├── management/commands/ Comando load_questions
+├── management/commands/ Comandos load_questions y ensure_superuser
 └── tests/               Tests del motor, modelos, vistas y admin
 RULES.md                 Reglas del juego numeradas
 ```
@@ -132,11 +151,12 @@ RULES.md                 Reglas del juego numeradas
 ## Hoja de ruta
 
 - [x] **Fase 1**: partida completa en un solo dispositivo.
-- [ ] Despliegue en internet (whitenoise, Docker, GitHub Actions).
+- [x] Despliegue en internet (Render, Neon, WhiteNoise) con CI en GitHub Actions.
+- [ ] Docker para el entorno de desarrollo y el despliegue.
 - [ ] **Fase 2**: salas online, cada jugador con su móvil (HTMX polling y después Django
   Channels).
 - [ ] Regla especial de «órdago»: apuesta exacta que congela la ronda.
 
 ## Autor
 
-Alejandro Martino · [GitHub](https://github.com/alejandrotfg12)
+Alejandro Martino · [GitHub](https://github.com/alejandrodavidmartino)
