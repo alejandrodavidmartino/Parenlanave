@@ -48,7 +48,7 @@ Modelo de estado del motor:
 
 Puntuación: **pendiente de definir** (habrá casos de éxito, fracaso y capitán solitario, con números propios). El saldo nunca baja de 0.
 
-Fuera de la Fase 1 (se añadirá después en su propia rama): regla especial de "órdago" (apuesta exacta que congela la ronda).
+Regla especial de "órdago" (apuesta exacta que congela la ronda): implementada, reglas R28-R33 en `RULES.md`.
 
 ## Plan
 **Fase 1 — un solo dispositivo** (el móvil se va pasando y la app indica de quién es el turno):

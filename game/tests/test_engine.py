@@ -9,6 +9,7 @@ from game.engine import (
     PlayerStatus,
     RoundResult,
     apply_scores,
+    call_ordago,
     check_player_count,
     choose_opener,
     finish_round,
@@ -418,3 +419,188 @@ def test_r27_treasure_lone_captain_failure_takes_4():
     result = RoundResult(captain=LUIS, crew=[], deserters=[ANA, MARTA], bid=150, answer=100)
 
     assert score_round(result, treasure=True) == {LUIS: -4, ANA: 2, MARTA: 2}
+
+
+# Órdago (R28-R33). Four players: Ana opens with 10, Luis raises to 12 and becomes
+# captain, Marta leaves, and then it's Pablo's turn.
+
+FOUR = ["Ana", "Luis", "Marta", "Pablo"]
+PABLO = 3
+
+
+def _round_up_to_pablo(ordago_spent=()):
+    round_ = start_round(FOUR, opener=ANA, opening_bid=10, ordago_spent=ordago_spent)
+    raise_bid(round_, LUIS, 12)
+    leave(round_, MARTA)
+    return round_
+
+
+def test_r28_ordago_is_played_in_your_turn():
+    round_ = _round_up_to_pablo()
+
+    call_ordago(round_, PABLO, 15)
+
+    assert round_.ordago_caller == PABLO
+    assert round_.ordago_bid == 15
+
+
+def test_r28_ordago_can_be_lower_than_the_current_bid():
+    round_ = _round_up_to_pablo()
+
+    call_ordago(round_, PABLO, 3)
+
+    assert round_.ordago_bid == 3
+
+
+def test_r28_ordago_can_be_zero():
+    round_ = _round_up_to_pablo()
+
+    call_ordago(round_, PABLO, 0)
+
+    assert round_.ordago_bid == 0
+
+
+@pytest.mark.parametrize("bid", [-1, 2.5, "7"])
+def test_r28_ordago_must_be_a_valid_bid(bid):
+    round_ = _round_up_to_pablo()
+    before = copy.deepcopy(round_)
+
+    with pytest.raises(InvalidMoveError):
+        call_ordago(round_, PABLO, bid)
+
+    assert round_ == before
+
+
+def test_r28_ordago_only_in_your_turn():
+    round_ = _round_up_to_pablo()
+    before = copy.deepcopy(round_)
+
+    with pytest.raises(InvalidMoveError):
+        call_ordago(round_, ANA, 15)
+
+    assert round_ == before
+
+
+def test_r28_player_who_left_cannot_call_ordago():
+    round_ = _round_up_to_pablo()
+
+    with pytest.raises(InvalidMoveError):
+        call_ordago(round_, MARTA, 15)
+
+
+def test_r29_ordago_already_spent_this_game_is_rejected():
+    round_ = _round_up_to_pablo(ordago_spent=[PABLO])
+    before = copy.deepcopy(round_)
+
+    with pytest.raises(InvalidMoveError):
+        call_ordago(round_, PABLO, 15)
+
+    assert round_ == before
+
+
+def test_r29_someone_elses_spent_ordago_does_not_stop_you():
+    round_ = _round_up_to_pablo(ordago_spent=[ANA, LUIS])
+
+    call_ordago(round_, PABLO, 15)
+
+    assert round_.ordago_caller == PABLO
+
+
+def test_r30_ordago_ends_the_round_at_once():
+    round_ = _round_up_to_pablo()
+
+    call_ordago(round_, PABLO, 15)
+
+    assert round_.is_over
+
+
+def test_r30_nobody_plays_after_an_ordago():
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    with pytest.raises(InvalidMoveError):
+        stay(round_, PABLO)
+    with pytest.raises(InvalidMoveError):
+        call_ordago(round_, PABLO, 16)
+
+
+def test_r30_finished_round_says_who_called_the_ordago():
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    result = finish_round(round_, answer=15)
+
+    assert result.ordago_caller == PABLO
+    assert result.ordago_bid == 15
+    assert result.captain == LUIS
+    assert result.crew == [ANA, PABLO]
+    assert result.deserters == [MARTA]
+
+
+def test_r31_ordago_hit_gives_10_and_nothing_to_the_others():
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    result = finish_round(round_, answer=15)
+
+    assert result.ordago_hit
+    assert score_round(result) == {PABLO: 10, ANA: 0, LUIS: 0, MARTA: 0}
+
+
+@pytest.mark.parametrize("answer", [14, 16])
+def test_r31_ordago_must_be_exact(answer):
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    assert not finish_round(round_, answer=answer).ordago_hit
+
+
+def test_r32_ordago_miss_takes_3_and_gives_1_to_the_others_on_board():
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    result = finish_round(round_, answer=20)
+
+    # Luis (captain) and Ana stay on board and win 1; Marta left and wins nothing.
+    assert score_round(result) == {PABLO: -3, ANA: 1, LUIS: 1, MARTA: 0}
+
+
+@pytest.mark.parametrize(("answer", "expected"), [(15, 10), (20, -3)])
+def test_r33_treasure_question_does_not_change_the_ordago(answer, expected):
+    round_ = _round_up_to_pablo()
+    call_ordago(round_, PABLO, 15)
+
+    result = finish_round(round_, answer=answer)
+
+    assert score_round(result, treasure=True)[PABLO] == expected
+
+
+def test_normal_round_has_no_ordago():
+    round_ = start_round(NAMES, opener=ANA, opening_bid=100)
+
+    assert round_.ordago_caller is None
+    assert not finish_round(_finished(round_), answer=100).ordago_hit
+
+
+def _finished(round_):
+    stay(round_, LUIS)
+    stay(round_, MARTA)
+    return round_
+
+
+def test_round_with_ordago_survives_being_turned_into_a_dict_and_back():
+    round_ = _round_up_to_pablo(ordago_spent=[ANA])
+    call_ordago(round_, PABLO, 15)
+
+    assert round_from_dict(round_to_dict(round_)) == round_
+
+
+def test_round_saved_before_the_ordago_existed_still_loads():
+    data = round_to_dict(start_round(NAMES, opener=ANA, opening_bid=100))
+    for key in ("ordago_spent", "ordago_caller", "ordago_bid"):
+        del data[key]
+
+    round_ = round_from_dict(data)
+
+    assert round_.ordago_caller is None
+    assert round_.ordago_spent == []

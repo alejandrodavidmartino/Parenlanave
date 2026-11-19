@@ -6,7 +6,7 @@ The rules it implements are described in RULES.md.
 """
 
 import random
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 
 # Game setup (R1-R3).
@@ -30,6 +30,11 @@ TREASURE_CHANCE = 0.1
 TREASURE_CAPTAIN_SUCCESS = 8
 TREASURE_LONE_CAPTAIN_SUCCESS = 12
 TREASURE_CAPTAIN_FAILURE = -4
+
+# Órdago (R31-R32). It scores the same in a treasure question (R33).
+ORDAGO_HIT = 10
+ORDAGO_MISS = -3
+ORDAGO_OTHERS_ON_MISS = 1
 
 
 class InvalidMoveError(Exception):
@@ -57,17 +62,25 @@ class Round:
 
     `captain` and `turn_index` are positions in `players`, which is also the turn
     order (R10).
+
+    The engine only sees one round, but the órdago is once per game (R29), so the
+    round is told who already spent theirs in earlier rounds (`ordago_spent`).
     """
 
     players: list[Player]
     captain: int
     current_bid: int
     turn_index: int
+    ordago_spent: list[int] = field(default_factory=list)
+    # Who called an órdago this round, and their number. None if nobody did.
+    ordago_caller: int | None = None
+    ordago_bid: int | None = None
 
     @property
     def is_over(self) -> bool:
-        """The round ends when the turn gets back to the captain (R18)."""
-        return self.turn_index == self.captain
+        """The round ends when the turn gets back to the captain (R18), or at once
+        when someone calls an órdago (R30)."""
+        return self.ordago_caller is not None or self.turn_index == self.captain
 
 
 @dataclass
@@ -82,6 +95,13 @@ class RoundResult:
     deserters: list[int]
     bid: int
     answer: int
+    ordago_caller: int | None = None
+    ordago_bid: int | None = None
+
+    @property
+    def ordago_hit(self) -> bool:
+        """An órdago is only right with the exact answer (R31)."""
+        return self.ordago_caller is not None and self.ordago_bid == self.answer
 
     @property
     def success(self) -> bool:
@@ -129,11 +149,12 @@ def is_treasure_round(rng: random.Random) -> bool:
     return rng.random() < TREASURE_CHANCE
 
 
-def start_round(names: list[str], opener: int, opening_bid: int) -> Round:
+def start_round(names: list[str], opener: int, opening_bid: int, ordago_spent=()) -> Round:
     """Start a round where `opener` makes the opening bid and becomes captain (R8).
 
     Everyone starts on board (R5) and the first turn goes to the player after the
-    opener, wrapping around the list (R10).
+    opener, wrapping around the list (R10). `ordago_spent` lists who already called
+    their órdago earlier in the game (R29).
     """
     _check_bid(opening_bid)
     players = [Player(name=name) for name in names]
@@ -142,6 +163,7 @@ def start_round(names: list[str], opener: int, opening_bid: int) -> Round:
         captain=opener,
         current_bid=opening_bid,
         turn_index=(opener + 1) % len(players),
+        ordago_spent=list(ordago_spent),
     )
 
 
@@ -173,6 +195,21 @@ def raise_bid(round_: Round, player: int, bid: int) -> None:
     _advance_turn(round_)
 
 
+def call_ordago(round_: Round, player: int, bid: int) -> None:
+    """The player bets that `bid` is exactly the answer and the round freezes (R28-R30).
+
+    It is a different bet from raising, so it doesn't need to beat the current bid.
+    The turn doesn't move on: the round is over now. The opener can't use it for the
+    opening bid because `start_round` has no way to call it.
+    """
+    _check_turn(round_, player)
+    _check_bid(bid)
+    if player in round_.ordago_spent:
+        raise InvalidMoveError(f"Player {player} already called their órdago this game")
+    round_.ordago_caller = player
+    round_.ordago_bid = bid
+
+
 def finish_round(round_: Round, answer: int) -> RoundResult:
     """Reveal the real answer once the round is over and say who was where (R20)."""
     if not round_.is_over:
@@ -191,7 +228,26 @@ def finish_round(round_: Round, answer: int) -> RoundResult:
         deserters=deserters,
         bid=round_.current_bid,
         answer=answer,
+        ordago_caller=round_.ordago_caller,
+        ordago_bid=round_.ordago_bid,
     )
+
+
+def _score_ordago(result: RoundResult) -> dict[int, int]:
+    """Coins for a round frozen by an órdago (R31-R32).
+
+    The caller stays on board until the end, so they are in `crew`: everyone on board
+    except them wins only if they miss.
+    """
+    on_board = [result.captain, *result.crew]
+    if result.ordago_hit:
+        deltas = {player: 0 for player in [*on_board, *result.deserters]}
+        deltas[result.ordago_caller] = ORDAGO_HIT
+        return deltas
+    deltas = {player: ORDAGO_OTHERS_ON_MISS for player in on_board}
+    deltas.update({player: 0 for player in result.deserters})
+    deltas[result.ordago_caller] = ORDAGO_MISS
+    return deltas
 
 
 def score_round(result: RoundResult, treasure: bool = False) -> dict[int, int]:
@@ -199,7 +255,10 @@ def score_round(result: RoundResult, treasure: bool = False) -> dict[int, int]:
 
     A lone captain who fails scores like any failed mission (R24). In a treasure
     question the captain wins or loses more; everyone else scores as usual (R27).
+    An órdago replaces all of that, treasure or not (R31-R33).
     """
+    if result.ordago_caller is not None:
+        return _score_ordago(result)
     if result.success:
         if treasure:
             captain = (
@@ -249,7 +308,11 @@ def round_to_dict(round_: Round) -> dict:
 
 
 def round_from_dict(data: dict) -> Round:
-    """Rebuild a round saved with `round_to_dict`."""
+    """Rebuild a round saved with `round_to_dict`.
+
+    Rounds saved before the órdago existed have no órdago keys: `.get` gives them the
+    "nobody called it" defaults, so games already in the database keep working.
+    """
     players = [
         Player(name=player["name"], status=PlayerStatus(player["status"]))
         for player in data["players"]
@@ -259,4 +322,7 @@ def round_from_dict(data: dict) -> Round:
         captain=data["captain"],
         current_bid=data["current_bid"],
         turn_index=data["turn_index"],
+        ordago_spent=data.get("ordago_spent", []),
+        ordago_caller=data.get("ordago_caller"),
+        ordago_bid=data.get("ordago_bid"),
     )

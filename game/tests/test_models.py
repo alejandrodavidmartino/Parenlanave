@@ -309,3 +309,58 @@ def test_r27_reveal_of_a_treasure_question_takes_4_from_the_captain(started_game
     captain, others = coins_by_role(started_game)
     assert captain == 6
     assert sorted(others.values()) == [10, 10]
+
+
+# Órdago (R28-R33).
+
+
+@pytest.mark.django_db
+def test_r28_r30_ordago_freezes_the_round_and_is_remembered(started_game):
+    play_round(started_game, 80)
+    turn = started_game.load_round().turn_index
+
+    started_game.call_ordago(turn, 88)
+
+    assert started_game.phase == "round_over"
+    assert started_game.players.get(position=turn).ordago_used
+    assert started_game.load_round().ordago_caller == turn
+
+
+@pytest.mark.django_db
+def test_r29_rejected_ordago_is_not_spent(started_game):
+    play_round(started_game, 80)
+    turn = started_game.load_round().turn_index
+
+    with pytest.raises(engine.InvalidMoveError):
+        started_game.call_ordago(turn, -1)
+
+    assert not started_game.players.get(position=turn).ordago_used
+    assert started_game.phase == "playing"
+
+
+@pytest.mark.django_db
+def test_r29_ordago_spent_in_one_round_cannot_be_used_in_the_next(three_questions):
+    game = Game.start(NAMES, total_rounds=2)
+    game.next_round(random.Random(1))
+    game.open_round(5)
+    caller = game.load_round().turn_index
+    game.call_ordago(caller, 7)
+    game.reveal()
+
+    game.next_round(random.Random(2))
+    game.open_round(5)
+
+    assert game.load_round().ordago_spent == [caller]
+
+
+@pytest.mark.django_db
+def test_r31_reveal_of_an_ordago_hit_gives_10(started_game):
+    play_round(started_game, 80)
+    caller = started_game.load_round().turn_index
+    started_game.call_ordago(caller, 88)
+
+    started_game.reveal()
+
+    coins = {player.position: player.coins for player in started_game.players.all()}
+    assert coins.pop(caller) == 10
+    assert set(coins.values()) == {0}

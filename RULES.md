@@ -107,7 +107,17 @@ Al terminar la ronda, cada jugador gana o pierde monedas según el resultado:
   éxito gana **8** (**12** si es solitario) y si fracasa pierde **4**. La tripulación y
   los desertores puntúan como siempre.
 
-## Pendiente de definir
+## Órdago
 
-- **Órdago**: regla especial de apuesta exacta que congela la ronda. Se añadirá más
-  adelante, en su propia rama.
+- **R28.** En su turno, en vez de quedarse, bajarse o subir, un jugador puede lanzar un
+  **órdago**: dice un número y afirma que es **exactamente** la respuesta. Tiene que ser
+  una apuesta válida (R9), pero **no hace falta que sea mayor** que la apuesta actual: es
+  otra apuesta distinta. Quien abre la ronda no puede lanzarlo con la apuesta inicial.
+- **R29.** Cada jugador puede lanzar **un solo órdago por partida**, acierte o falle.
+- **R30.** El órdago **congela la ronda**: nadie más juega y se revela la respuesta.
+- **R31. Órdago acertado** (el número es igual a la respuesta): quien lo lanzó gana
+  **10** y todos los demás ganan **0**.
+- **R32. Órdago fallado:** quien lo lanzó pierde **3**, cada uno de los demás que siguen
+  dentro del barco (capitán incluido) gana **1** y los desertores ganan **0**.
+- **R33.** En una pregunta del tesoro, el órdago puntúa igual (R31-R32). El saldo sigue
+  sin bajar de 0 (R25).
