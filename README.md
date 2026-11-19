@@ -24,7 +24,10 @@ motor de Python puro y cubierta al 100 % por tests.
    se pasa, naufraga y ganan los que se bajaron.
 5. Tras varias rondas, gana quien tenga más monedas.
 
-Las reglas completas, numeradas de la R1 a la R25, están en [RULES.md](RULES.md).
+Una vez por partida, cada jugador puede lanzar un **órdago**: decir el número exacto. La
+ronda se congela y se revela al momento: si acierta, se lleva un gran premio.
+
+Las reglas completas, numeradas de la R1 a la R33, están en [RULES.md](RULES.md).
 
 ## Características
 
@@ -155,7 +158,7 @@ RULES.md                 Reglas del juego numeradas
 - [ ] Docker para el entorno de desarrollo y el despliegue.
 - [ ] **Fase 2**: salas online, cada jugador con su móvil (HTMX polling y después Django
   Channels).
-- [ ] Regla especial de «órdago»: apuesta exacta que congela la ronda.
+- [x] Regla especial de «órdago»: apuesta exacta que congela la ronda (R28-R33).
 
 ## Autor
 

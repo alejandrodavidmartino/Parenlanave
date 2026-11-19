@@ -54,6 +54,7 @@ def _points():
             engine.TREASURE_CAPTAIN_FAILURE,
         ),
         "treasure_chance": round(engine.TREASURE_CHANCE * 100),
+        "ordago": (engine.ORDAGO_HIT, engine.ORDAGO_MISS, engine.ORDAGO_OTHERS_ON_MISS),
     }
 
 
@@ -83,7 +84,8 @@ def open_round(request, pk):
 
 @require_POST
 def play(request, pk):
-    """Stay, leave or raise for the player whose turn it is (R12-R14)."""
+    """Stay, leave, raise or call the órdago for the player whose turn it is (R12-R14,
+    R28)."""
     game = get_object_or_404(Game, pk=pk)
     if game.phase != "playing":
         return _respond(request, game, error=INVALID_MOVE)
@@ -91,6 +93,10 @@ def play(request, pk):
     try:
         player = int(request.POST.get("player", ""))
         action = request.POST.get("action")
+        if action == "ordago":
+            # The órdago also marks the player's órdago as spent, so the model saves it.
+            game.call_ordago(player, _read_bid(request))
+            return _respond(request, game)
         if action == "stay":
             engine.stay(round_, player)
         elif action == "leave":
@@ -113,7 +119,10 @@ def reveal(request, pk):
         return _respond(request, game, error=INVALID_MOVE)
     game.reveal()
     # Only right after revealing: the full screen suspense scene. Reloading skips it.
-    return _respond(request, game, dramatic=True)
+    # The scene shows whether the captain's bid sails or sinks; an órdago is a
+    # different bet, so it goes straight to the summary.
+    dramatic = game.load_round().ordago_caller is None
+    return _respond(request, game, dramatic=dramatic)
 
 
 def _read_bid(request) -> int:
@@ -149,6 +158,9 @@ def _board_context(game, error=None):
         context["captain_name"] = players[round_.captain].name
         context["turn_name"] = players[round_.turn_index].name
         context["next_bid"] = round_.current_bid + 1
+        context["can_ordago"] = not players[round_.turn_index].ordago_used
+        if round_.ordago_caller is not None:
+            context["ordago_name"] = players[round_.ordago_caller].name
 
     # Who has to take the phone now. Not after an error: the same player tries again.
     if error is None and phase == "opening":
@@ -205,6 +217,8 @@ def _role(result, position):
     """Captain, crew member or deserter in the finished round (see RULES.md glossary)."""
     if result is None:
         return None
+    if position == result.ordago_caller:
+        return "órdago"
     if position == result.captain:
         return "capitán"
     if position in result.crew:

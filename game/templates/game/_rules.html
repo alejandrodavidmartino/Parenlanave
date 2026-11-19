@@ -55,3 +55,10 @@
   {{ points.treasure_chance }}&nbsp;% de que salga. Solo cambia lo del capitán: gana
   {{ points.treasure.0 }} ({{ points.treasure.1 }} si va solo) o pierde {{ points.treasure.2|cut:"-" }}.
 </p>
+
+<p>
+  <strong class="text-px-pink">Órdago:</strong> una vez por partida, en tu turno, puedes decir el
+  número <strong>exacto</strong> de la respuesta (aunque sea menor que la apuesta). La ronda se
+  congela y se revela: si aciertas ganas {{ points.ordago.0 }} y nadie más gana nada; si fallas
+  pierdes {{ points.ordago.1|cut:"-" }} y cada uno de los que siguen a bordo gana {{ points.ordago.2 }}.
+</p>

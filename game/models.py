@@ -138,9 +138,24 @@ class Game(models.Model):
             self.asked_questions.add(self.current_question_id)
 
     def open_round(self, opening_bid: int) -> None:
-        """The opener makes the opening bid and the round starts (R8)."""
-        names = [player.name for player in self.players.all()]
-        self.save_round(engine.start_round(names, self.opener, opening_bid))
+        """The opener makes the opening bid and the round starts (R8).
+
+        The engine only knows the round, so it is told who already spent their órdago
+        earlier in the game (R29).
+        """
+        players = list(self.players.all())
+        names = [player.name for player in players]
+        spent = [player.position for player in players if player.ordago_used]
+        self.save_round(engine.start_round(names, self.opener, opening_bid, spent))
+
+    def call_ordago(self, player: int, bid: int) -> None:
+        """The player whose turn it is calls their órdago and the round freezes
+        (R28-R30). It is marked as spent for the rest of the game (R29)."""
+        round_ = self.load_round()
+        engine.call_ordago(round_, player, bid)  # raises before saving anything
+        with transaction.atomic():
+            self.players.filter(position=player).update(ordago_used=True)
+            self.save_round(round_)
 
     def result(self) -> engine.RoundResult:
         """What happened in the finished round, compared with the real answer (R20)."""
@@ -181,6 +196,8 @@ class Player(models.Model):
     name = models.CharField(max_length=30)
     position = models.PositiveSmallIntegerField()
     coins = models.PositiveIntegerField(default=engine.STARTING_COINS)
+    # Each player has one órdago per game (R29).
+    ordago_used = models.BooleanField(default=False)
     colour = models.CharField(
         max_length=10,
         choices=[(key, name) for key, (name, _, _) in PLAYER_COLOURS.items()],

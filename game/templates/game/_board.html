@@ -119,11 +119,37 @@
       </div>
     </form>
 
+    {% if can_ordago %}
+      {# Órdago (R28-R29): its own form and number box, so a number typed to raise is #}
+      {# never sent as an órdago by mistake. It asks first: there's only one per game. #}
+      <form hx-post="{% url 'game:play' game.pk %}" hx-target="#board" hx-swap="outerHTML"
+            hx-confirm="Solo tienes un órdago por partida. ¿Seguro que es el número exacto?"
+            method="post" action="{% url 'game:play' game.pk %}" class="box-px space-y-2 border-px-pink bg-px-black">
+        {% csrf_token %}
+        <input type="hidden" name="player" value="{{ round.turn_index }}">
+        <p class="text-lg leading-tight text-px-silver">
+          ¿Sabes la respuesta <strong class="text-px-pink">exacta</strong>? Acierta y ganas
+          {{ points.ordago.0 }}; falla y pierdes {{ points.ordago.1|cut:"-" }}. Uno por partida.
+        </p>
+        <div class="flex gap-2">
+          <input type="number" name="bid" min="0" required inputmode="numeric" placeholder="Número exacto" class="input-px">
+          <button name="action" value="ordago" class="btn-px w-auto bg-px-pink px-4 text-px-black">¡Órdago!</button>
+        </div>
+      </form>
+    {% endif %}
+
   {% elif phase == "round_over" %}
-    <p class="text-center text-2xl">
-      Ronda terminada. Capitán: <strong class="text-px-gold">{{ captain_name }}</strong> con
-      <strong class="text-px-gold">{{ round.current_bid }}</strong>.
-    </p>
+    {% if round.ordago_caller is not None %}
+      <p class="text-center text-2xl">
+        ¡<strong class="text-px-pink">{{ ordago_name }}</strong> lanza un órdago al
+        <strong class="font-pixel text-px-pink">{{ round.ordago_bid }}</strong>! La ronda queda congelada.
+      </p>
+    {% else %}
+      <p class="text-center text-2xl">
+        Ronda terminada. Capitán: <strong class="text-px-gold">{{ captain_name }}</strong> con
+        <strong class="text-px-gold">{{ round.current_bid }}</strong>.
+      </p>
+    {% endif %}
     <form hx-post="{% url 'game:reveal' game.pk %}" hx-target="#board" hx-swap="outerHTML"
           method="post" action="{% url 'game:reveal' game.pk %}">
       {% csrf_token %}
@@ -144,17 +170,29 @@
         <span class="font-pixel text-2xl" data-spin="{{ result.answer }}">{{ result.answer }}</span>
       </p>
     </div>
-    <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
-      <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
-        {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}
-      </p>
-      {% if result.lone_captain %}
-        <p class="text-xl">
-          {% if result.success %}¡Capitán solitario! Se lleva todo el botín.{% else %}Se hunde solo… ¡y los desertores lo celebran!{% endif %}
+    {% if result.ordago_caller is not None %}
+      {# Órdago (R31-R32): the captain's bid doesn't matter, only the exact number. #}
+      <div class="box-px border-b-8 text-center {% if result.ordago_hit %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
+        <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
+          {% if result.ordago_hit %}¡Órdago acertado!{% else %}¡Órdago fallado!{% endif %}
         </p>
-      {% endif %}
-      <p class="text-xl">{{ captain_name }} apostó {{ result.bid }}{% if result.success %} y no se pasó{% else %} y se pasó{% endif %}.</p>
-    </div>
+        <p class="text-xl">
+          {{ ordago_name }} dijo {{ result.ordago_bid }}{% if result.ordago_hit %}: ¡exacto!{% else %} y no era exacto.{% endif %}
+        </p>
+      </div>
+    {% else %}
+      <div class="box-px border-b-8 text-center {% if result.success %}bg-px-green{% else %}bg-px-red{% endif %} text-px-black">
+        <p class="animate-blink font-pixel text-xs leading-relaxed uppercase">
+          {% if result.success %}¡El barco zarpa!{% else %}¡Naufragio!{% endif %}
+        </p>
+        {% if result.lone_captain %}
+          <p class="text-xl">
+            {% if result.success %}¡Capitán solitario! Se lleva todo el botín.{% else %}Se hunde solo… ¡y los desertores lo celebran!{% endif %}
+          </p>
+        {% endif %}
+        <p class="text-xl">{{ captain_name }} apostó {{ result.bid }}{% if result.success %} y no se pasó{% else %} y se pasó{% endif %}.</p>
+      </div>
+    {% endif %}
 
     <ul class="space-y-2">
       {% for player in players %}

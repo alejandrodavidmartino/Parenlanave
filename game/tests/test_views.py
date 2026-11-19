@@ -765,3 +765,106 @@ def test_revealed_round_is_a_short_summary_without_pictures(client, game):
     assert "How many keys does a piano have?" in content and "La respuesta era" in content
     assert "El barco zarpa de noche" not in content  # the ship scene was shown already
     assert 'preserveAspectRatio="xMidYMax slice"' not in content  # nor the question picture
+
+
+# Órdago (R28-R33).
+
+
+def start_playing(client, game):
+    client.post(url("next_round", game), **HTMX)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+
+@pytest.mark.django_db
+def test_r28_board_offers_the_ordago_to_whoever_has_it(client, game):
+    client.post(url("next_round", game), **HTMX)
+
+    response = client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    content = response.content.decode()
+    assert 'value="ordago"' in content
+    assert "¡Órdago!" in content
+
+
+@pytest.mark.django_db
+def test_r28_r30_ordago_freezes_the_round(client, game):
+    start_playing(client, game)
+
+    response = play(client, game, "ordago", "88")
+
+    game = refresh(game)
+    caller = game.load_round().turn_index
+    assert game.phase == "round_over"
+    assert game.players.get(position=caller).ordago_used
+    assert "lanza un órdago al" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_r28_ordago_without_a_number_shows_an_error(client, game):
+    start_playing(client, game)
+
+    response = play(client, game, "ordago", "")
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+    assert refresh(game).phase == "playing"
+
+
+@pytest.mark.django_db
+def test_r29_board_hides_the_ordago_once_spent(client, game):
+    start_playing(client, game)
+    turn = refresh(game).load_round().turn_index
+    game.players.filter(position=turn).update(ordago_used=True)
+
+    response = client.get(url("detail", game))
+
+    assert 'value="ordago"' not in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_r29_spent_ordago_is_rejected(client, game):
+    client.post(url("next_round", game), **HTMX)
+    game = refresh(game)
+    turn = (game.opener + 1) % 3
+    game.players.filter(position=turn).update(ordago_used=True)
+    client.post(url("open_round", game), {"bid": "50"}, **HTMX)
+
+    response = play(client, game, "ordago", "88")
+
+    assert "Esa jugada no está permitida." in response.content.decode()
+    assert refresh(game).phase == "playing"
+
+
+@pytest.mark.django_db
+def test_r31_revealing_an_ordago_hit(client, game):
+    start_playing(client, game)
+    play(client, game, "ordago", "88")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    assert "¡Órdago acertado!" in content
+    assert "+10" in content
+    assert "· órdago" in content
+    # The ship scene is about the captain's bid, which an órdago leaves aside.
+    assert "data-reveal" not in content
+
+
+@pytest.mark.django_db
+def test_r32_revealing_an_ordago_miss(client, game):
+    start_playing(client, game)
+    play(client, game, "ordago", "87")
+
+    response = client.post(url("reveal", game), **HTMX)
+
+    content = response.content.decode()
+    assert "¡Órdago fallado!" in content
+    assert "-3" in content and "+1" in content
+
+
+@pytest.mark.django_db
+def test_rules_window_explains_the_ordago(client, game):
+    response = client.get(url("detail", game))
+
+    content = response.content.decode()
+    assert "Órdago" in content
+    assert "ganas 10" in content and "pierdes 3" in content
