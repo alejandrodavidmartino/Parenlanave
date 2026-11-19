@@ -1,0 +1,52 @@
+# Continuous integration: on every push to main and every pull request, GitHub runs
+# the linter and the tests on a clean machine. A red cross on the PR means "don't merge".
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # Settings read these from the environment; CI has no .env file.
+      # Long enough (50+ chars) to pass `check --deploy`; it only signs CI test data.
+      SECRET_KEY: ci-only-key-not-used-anywhere-else-0123456789abcdefghijklmnop
+      # Like a local .env. With DEBUG off, every request is redirected to HTTPS and the
+      # view tests would get a 301 instead of the page.
+      DEBUG: "True"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs uv and caches the downloaded packages between runs.
+      # setup-uv publishes only exact version tags (no floating "v10"), so pin one.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+
+      # Exact versions from uv.lock (fails if the lock file is out of date).
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      # Production settings (HTTPS, secure cookies...) only apply with DEBUG off.
+      - name: Django deploy checks
+        run: uv run python manage.py check --deploy --fail-level WARNING
+        env:
+          DEBUG: "False"
+          # On Render this variable fills ALLOWED_HOSTS (see settings.py); simulate it.
+          RENDER_EXTERNAL_HOSTNAME: atraquen-el-barco.onrender.com
+
+      - name: Check for missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Tests
+        run: uv run pytest --cov --cov-fail-under=100

@@ -15,3 +15,10 @@ services:
         value: "False"
       - key: DATABASE_URL
         sync: false # Render asks for it when creating the service
+      # Admin user, created on the first deploy by build.sh (ensure_superuser).
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
